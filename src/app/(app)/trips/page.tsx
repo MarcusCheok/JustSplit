@@ -84,6 +84,7 @@ function TripCard({
   return (
     <Link
       href={`/trips/${tripId}`}
+      prefetch={false}
       className={`flex flex-col gap-1 rounded-2xl p-4 shadow-sm ring-1 ring-black/5 transition hover:shadow-md ${
         dimmed ? "bg-white/60 text-ink/60" : "bg-white"
       }`}

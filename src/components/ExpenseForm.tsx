@@ -18,9 +18,11 @@ function detectInitialMode(expense?: Expense): SplitMode {
 
 export function ExpenseForm({
   action,
+  tripId,
   expense,
 }: {
   action: (formData: FormData) => void;
+  tripId: string;
   expense?: Expense;
 }) {
   const { users, currentUser } = useCurrentUser();
@@ -35,6 +37,8 @@ export function ExpenseForm({
 
   return (
     <form action={action} className="flex flex-col gap-4">
+      <input type="hidden" name="tripId" value={tripId} />
+      {expense && <input type="hidden" name="expenseId" value={expense.id} />}
       <label className="flex flex-col gap-1">
         <span className="text-sm font-medium text-ink/70">Description</span>
         <input

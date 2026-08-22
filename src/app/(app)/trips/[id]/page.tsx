@@ -44,19 +44,22 @@ export default async function TripDetailPage({
         <div className="grid grid-cols-2 gap-2">
           <Link
             href={`/trips/${id}/expenses/new`}
+            prefetch={false}
             className="rounded-2xl bg-mint-dark px-4 py-3 text-center font-semibold text-white"
           >
             + Add expense
           </Link>
           <Link
             href={`/trips/${id}/settle`}
+            prefetch={false}
             className="rounded-2xl bg-blush-dark px-4 py-3 text-center font-semibold text-white"
           >
             Settle up
           </Link>
         </div>
       ) : (
-        <form action={reopenTripAction.bind(null, id)}>
+        <form action={reopenTripAction}>
+          <input type="hidden" name="tripId" value={id} />
           <button className="w-full rounded-2xl bg-white px-4 py-2 text-sm ring-1 ring-black/10">
             Reopen trip
           </button>
@@ -76,6 +79,7 @@ export default async function TripDetailPage({
             <Link
               key={expense.id}
               href={`/trips/${id}/expenses/${expense.id}/edit`}
+              prefetch={false}
               className="flex items-center justify-between rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5"
             >
               <div className="flex flex-col">
@@ -118,7 +122,8 @@ export default async function TripDetailPage({
       )}
 
       {trip.status === "open" && (
-        <form action={closeTripAction.bind(null, id)} className="mt-2">
+        <form action={closeTripAction} className="mt-2">
+          <input type="hidden" name="tripId" value={id} />
           <button className="w-full rounded-2xl bg-white px-4 py-2 text-sm text-ink/60 ring-1 ring-black/10">
             Close trip
           </button>

@@ -34,7 +34,8 @@ supabase link --project-ref <your-project-ref>
 supabase db push
 ```
 
-Renaming the two users (default seed is "Marcus" / "Partner") is a one-time SQL edit:
+Renaming the two users (migration seeds "Marcus" / "Partner"; currently renamed in the live
+database to "Marcus" / "Baegirl") is a one-time SQL edit:
 
 ```sql
 update users set name = 'Real Name', emoji = '🐰' where id = 2;

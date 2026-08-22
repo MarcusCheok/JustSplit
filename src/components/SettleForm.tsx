@@ -5,10 +5,12 @@ import type { User } from "@/lib/types";
 
 export function SettleForm({
   action,
+  tripId,
   users,
   balance,
 }: {
   action: (formData: FormData) => void;
+  tripId: string;
   users: [User, User];
   balance: { net: number; owedByUserId: number | null; owedToUserId: number | null };
 }) {
@@ -20,6 +22,7 @@ export function SettleForm({
 
   return (
     <form action={action} className="flex flex-col gap-4">
+      <input type="hidden" name="tripId" value={tripId} />
       <input type="hidden" name="toUserId" value={to} />
       <label className="flex flex-col gap-1">
         <span className="text-sm font-medium text-ink/70">Who paid?</span>

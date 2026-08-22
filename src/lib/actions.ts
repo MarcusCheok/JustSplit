@@ -12,13 +12,15 @@ export async function createTripAction(formData: FormData) {
   redirect(`/trips/${trip.id}`);
 }
 
-export async function closeTripAction(tripId: string) {
+export async function closeTripAction(formData: FormData) {
+  const tripId = String(formData.get("tripId"));
   await db.closeTrip(tripId);
   revalidatePath(`/trips/${tripId}`);
   revalidatePath("/trips");
 }
 
-export async function reopenTripAction(tripId: string) {
+export async function reopenTripAction(formData: FormData) {
+  const tripId = String(formData.get("tripId"));
   await db.reopenTrip(tripId);
   revalidatePath(`/trips/${tripId}`);
   revalidatePath("/trips");
@@ -63,7 +65,8 @@ function parseSplits(formData: FormData, amount: number) {
   throw new Error("Unknown split mode");
 }
 
-export async function addExpenseAction(tripId: string, formData: FormData) {
+export async function addExpenseAction(formData: FormData) {
+  const tripId = String(formData.get("tripId"));
   const amount = Number(formData.get("amount"));
   if (!amount || amount <= 0) throw new Error("Amount must be greater than 0");
 
@@ -78,14 +81,13 @@ export async function addExpenseAction(tripId: string, formData: FormData) {
   });
 
   revalidatePath(`/trips/${tripId}`);
+  revalidatePath("/trips");
   redirect(`/trips/${tripId}`);
 }
 
-export async function updateExpenseAction(
-  tripId: string,
-  expenseId: string,
-  formData: FormData
-) {
+export async function updateExpenseAction(formData: FormData) {
+  const tripId = String(formData.get("tripId"));
+  const expenseId = String(formData.get("expenseId"));
   const amount = Number(formData.get("amount"));
   if (!amount || amount <= 0) throw new Error("Amount must be greater than 0");
 
@@ -99,16 +101,21 @@ export async function updateExpenseAction(
   });
 
   revalidatePath(`/trips/${tripId}`);
+  revalidatePath("/trips");
   redirect(`/trips/${tripId}`);
 }
 
-export async function deleteExpenseAction(tripId: string, expenseId: string) {
+export async function deleteExpenseAction(formData: FormData) {
+  const tripId = String(formData.get("tripId"));
+  const expenseId = String(formData.get("expenseId"));
   await db.deleteExpense(expenseId);
   revalidatePath(`/trips/${tripId}`);
+  revalidatePath("/trips");
   redirect(`/trips/${tripId}`);
 }
 
-export async function addSettlementAction(tripId: string, formData: FormData) {
+export async function addSettlementAction(formData: FormData) {
+  const tripId = String(formData.get("tripId"));
   const amount = Number(formData.get("amount"));
   if (!amount || amount <= 0) throw new Error("Amount must be greater than 0");
 
@@ -121,5 +128,6 @@ export async function addSettlementAction(tripId: string, formData: FormData) {
   });
 
   revalidatePath(`/trips/${tripId}`);
+  revalidatePath("/trips");
   redirect(`/trips/${tripId}`);
 }
