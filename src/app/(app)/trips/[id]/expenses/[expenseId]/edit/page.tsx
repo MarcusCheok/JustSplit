@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getExpense, getTrip } from "@/lib/data";
+import { getExpense, getTrip, getTripParticipants } from "@/lib/data";
 import { updateExpenseAction, deleteExpenseAction } from "@/lib/actions";
 import { ExpenseForm } from "@/components/ExpenseForm";
 
@@ -14,6 +14,7 @@ export default async function EditExpensePage({
   if (!expense) notFound();
   const trip = await getTrip(expense.trip_id);
   if (!trip) notFound();
+  const participants = await getTripParticipants(expense.trip_id);
 
   return (
     <div className="flex flex-col gap-4">
@@ -27,6 +28,7 @@ export default async function EditExpensePage({
       <ExpenseForm
         action={updateExpenseAction}
         tripId={expense.trip_id}
+        participants={participants}
         expense={expense}
       />
       <form action={deleteExpenseAction}>

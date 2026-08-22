@@ -1,19 +1,31 @@
 import Link from "next/link";
-import { getTrips, getTripExpenses, getTripSettlements, getUsers } from "@/lib/data";
-import { computeBalance } from "@/lib/balance";
+import {
+  getTrips,
+  getTripExpenses,
+  getTripSettlements,
+  getUsers,
+  getTripParticipants,
+} from "@/lib/data";
+import { computeGroupBalance } from "@/lib/balance";
 import { createTripAction } from "@/lib/actions";
-import { BalanceText } from "@/components/BalanceText";
+import { BalanceSummary } from "@/components/BalanceSummary";
+import { TripForm } from "@/components/TripForm";
 
 export default async function TripsPage() {
   const [trips, users] = await Promise.all([getTrips(), getUsers()]);
 
   const summaries = await Promise.all(
     trips.map(async (trip) => {
-      const [expenses, settlements] = await Promise.all([
+      const [participants, expenses, settlements] = await Promise.all([
+        getTripParticipants(trip.id),
         getTripExpenses(trip.id),
         getTripSettlements(trip.id),
       ]);
-      return { trip, balance: computeBalance(users, expenses, settlements) };
+      return {
+        trip,
+        participants,
+        balance: computeGroupBalance(participants, expenses, settlements),
+      };
     })
   );
 
@@ -47,40 +59,24 @@ export default async function TripsPage() {
           {open.length === 0 && (
             <p className="text-sm text-ink/50">No open trips yet.</p>
           )}
-          {open.map(({ trip, balance }) => (
+          {open.map(({ trip, participants, balance }) => (
             <TripCard key={trip.id} tripId={trip.id} name={trip.name}>
-              <BalanceText users={users} balance={balance} />
+              <BalanceSummary participants={participants} balance={balance} compact />
             </TripCard>
           ))}
         </section>
       )}
 
-      <form
-        action={createTripAction}
-        className="flex gap-2 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5"
-      >
-        <input
-          name="name"
-          placeholder="New trip name"
-          required
-          className="flex-1 rounded-xl bg-cream px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blush-dark"
-        />
-        <button
-          type="submit"
-          className="rounded-xl bg-mint-dark px-4 py-2 text-sm font-semibold text-white transition active:scale-[0.97]"
-        >
-          + Add
-        </button>
-      </form>
+      <TripForm action={createTripAction} existingUsers={users} />
 
       {closed.length > 0 && (
         <section className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/50">
             Closed
           </h2>
-          {closed.map(({ trip, balance }) => (
+          {closed.map(({ trip, participants, balance }) => (
             <TripCard key={trip.id} tripId={trip.id} name={trip.name} dimmed>
-              <BalanceText users={users} balance={balance} />
+              <BalanceSummary participants={participants} balance={balance} compact />
             </TripCard>
           ))}
         </section>

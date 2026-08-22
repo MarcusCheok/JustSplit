@@ -5,16 +5,19 @@ import {
   getTripExpenses,
   getTripSettlements,
   getAllExpenseSplitTotals,
+  getAllTripParticipants,
+  getTripParticipants,
 } from "@/lib/data";
-import { computeBalance } from "@/lib/balance";
+import { computeGroupBalance, type GroupBalance } from "@/lib/balance";
 import { computeTripsSnapshot } from "@/lib/analytics";
-import { BalanceText } from "@/components/BalanceText";
+import { BalanceSummary } from "@/components/BalanceSummary";
 import { TripsSnapshotSummary } from "@/components/TripsSnapshotSummary";
+import { TopCompanionCard } from "@/components/TopCompanionCard";
 import type { Trip, User } from "@/lib/types";
 
 export default async function TripHistoryPage() {
   let trips: Trip[];
-  let users: [User, User];
+  let users: User[];
   try {
     [trips, users] = await Promise.all([getTrips(), getUsers()]);
   } catch {
@@ -38,7 +41,7 @@ export default async function TripHistoryPage() {
       ) : (
         <>
           <SnapshotSection trips={trips} users={users} />
-          <TripListSection trips={trips} users={users} />
+          <TripListSection trips={trips} />
         </>
       )}
     </div>
@@ -79,12 +82,17 @@ async function SnapshotSection({
   users,
 }: {
   trips: Trip[];
-  users: [User, User];
+  users: User[];
 }) {
   let snapshot;
+  let participantRows;
   try {
-    const expenseTotals = await getAllExpenseSplitTotals();
-    snapshot = computeTripsSnapshot(users, trips, expenseTotals);
+    const [expenseTotals, rows] = await Promise.all([
+      getAllExpenseSplitTotals(),
+      getAllTripParticipants(),
+    ]);
+    participantRows = rows;
+    snapshot = computeTripsSnapshot(users, trips, rows, expenseTotals);
   } catch {
     return <ErrorCard message="Couldn't load your trip stats — try again." />;
   }
@@ -99,32 +107,33 @@ async function SnapshotSection({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-lavender p-4">
-      <TripsSnapshotSummary
-        users={users}
-        tripCount={snapshot.tripsTogetherCount}
-        medianSpendByUser={snapshot.medianSpendByUser}
-      />
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 rounded-2xl bg-lavender p-4">
+        <TripsSnapshotSummary
+          tripCount={snapshot.tripCount}
+          medianSpendByUser={snapshot.medianSpendByUser}
+        />
+      </div>
+      <TopCompanionCard users={users} trips={trips} participantRows={participantRows} />
     </div>
   );
 }
 
-async function TripListSection({
-  trips,
-  users,
-}: {
-  trips: Trip[];
-  users: [User, User];
-}) {
+async function TripListSection({ trips }: { trips: Trip[] }) {
   let rows;
   try {
     rows = await Promise.all(
       trips.map(async (trip) => {
-        const [expenses, settlements] = await Promise.all([
+        const [participants, expenses, settlements] = await Promise.all([
+          getTripParticipants(trip.id),
           getTripExpenses(trip.id),
           getTripSettlements(trip.id),
         ]);
-        return { trip, balance: computeBalance(users, expenses, settlements) };
+        return {
+          trip,
+          participants,
+          balance: computeGroupBalance(participants, expenses, settlements),
+        };
       })
     );
   } catch {
@@ -141,8 +150,13 @@ async function TripListSection({
       <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/50">
         All trips
       </h2>
-      {chronological.map(({ trip, balance }) => (
-        <HistoryTripCard key={trip.id} trip={trip} users={users} balance={balance} />
+      {chronological.map(({ trip, participants, balance }) => (
+        <HistoryTripCard
+          key={trip.id}
+          trip={trip}
+          participants={participants}
+          balance={balance}
+        />
       ))}
     </section>
   );
@@ -163,12 +177,12 @@ function StatusBadge({ status }: { status: Trip["status"] }) {
 
 function HistoryTripCard({
   trip,
-  users,
+  participants,
   balance,
 }: {
   trip: Trip;
-  users: [User, User];
-  balance: { net: number; owedByUserId: number | null; owedToUserId: number | null };
+  participants: User[];
+  balance: GroupBalance;
 }) {
   return (
     <Link
@@ -183,7 +197,7 @@ function HistoryTripCard({
         <StatusBadge status={trip.status} />
       </div>
       <span className="text-sm text-ink/60">
-        <BalanceText users={users} balance={balance} />
+        <BalanceSummary participants={participants} balance={balance} compact />
       </span>
     </Link>
   );

@@ -2,10 +2,41 @@ import "server-only";
 import { supabase } from "./supabase";
 import type { Expense, Settlement, Trip, User } from "./types";
 
-export async function getUsers(): Promise<[User, User]> {
+export async function getUsers(): Promise<User[]> {
   const { data, error } = await supabase.from("users").select("*").order("id");
   if (error) throw error;
-  return data as [User, User];
+  return data as User[];
+}
+
+export async function createUser(name: string, emoji: string): Promise<User> {
+  const { data, error } = await supabase
+    .from("users")
+    .insert({ name, emoji, color: "gray" })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as User;
+}
+
+export async function getTripParticipants(tripId: string): Promise<User[]> {
+  const { data, error } = await supabase
+    .from("trip_participants")
+    .select("users(*)")
+    .eq("trip_id", tripId);
+  if (error) throw error;
+  return ((data ?? []) as unknown as { users: User }[])
+    .map((row) => row.users)
+    .sort((a, b) => a.id - b.id);
+}
+
+export async function getAllTripParticipants(): Promise<
+  { trip_id: string; user_id: number }[]
+> {
+  const { data, error } = await supabase
+    .from("trip_participants")
+    .select("trip_id, user_id");
+  if (error) throw error;
+  return data as { trip_id: string; user_id: number }[];
 }
 
 export async function getTrips(): Promise<Trip[]> {
@@ -28,14 +59,24 @@ export async function getTrip(id: string): Promise<Trip | null> {
   return data as Trip | null;
 }
 
-export async function createTrip(name: string): Promise<Trip> {
+export async function createTrip(
+  name: string,
+  participantIds: number[]
+): Promise<Trip> {
   const { data, error } = await supabase
     .from("trips")
     .insert({ name })
     .select("*")
     .single();
   if (error) throw error;
-  return data as Trip;
+  const trip = data as Trip;
+
+  const { error: participantsError } = await supabase
+    .from("trip_participants")
+    .insert(participantIds.map((userId) => ({ trip_id: trip.id, user_id: userId })));
+  if (participantsError) throw participantsError;
+
+  return trip;
 }
 
 export async function closeTrip(id: string): Promise<void> {

@@ -11,11 +11,9 @@ import type { User } from "@/lib/types";
  * server-computed props from computeTripsSnapshot(), unchanged.
  */
 export function TripsSnapshotSummary({
-  users,
   tripCount,
   medianSpendByUser,
 }: {
-  users: [User, User];
   tripCount: number;
   medianSpendByUser: Record<number, number>;
 }) {
@@ -24,35 +22,30 @@ export function TripsSnapshotSummary({
   // the time this component mounts, currentUser is guaranteed non-null.
   const { currentUser } = useCurrentUser();
   const me = currentUser as User;
-  const other = users.find((u) => u.id !== me.id) ?? users[0];
-
-  const bothZero = users.every((u) => medianSpendByUser[u.id] === 0);
+  const mySpend = medianSpendByUser[me.id] ?? 0;
 
   return (
     <>
       <p
         className="text-center font-medium"
-        aria-label={`You've been on ${tripCount} trip${tripCount === 1 ? "" : "s"} with ${other.name}`}
+        aria-label={`You've logged ${tripCount} trip${tripCount === 1 ? "" : "s"}`}
       >
-        🧳 You&apos;ve been on {tripCount} trip{tripCount === 1 ? "" : "s"} with{" "}
-        {other.emoji} {other.name}
+        🧳 You&apos;ve logged {tripCount} trip{tripCount === 1 ? "" : "s"}
       </p>
 
       <div className="flex flex-col gap-1.5 rounded-xl bg-white/60 p-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-ink/50">
           Typical spend per trip
         </p>
-        {bothZero ? (
+        {mySpend === 0 ? (
           <p className="text-sm text-ink/60">Nothing logged yet.</p>
         ) : (
           <p
             className="text-sm"
-            aria-label={`You typically spend $${medianSpendByUser[me.id].toFixed(2)} per trip`}
+            aria-label={`You typically spend $${mySpend.toFixed(2)} per trip`}
           >
             {me.emoji} You typically spend{" "}
-            <span className="font-semibold">
-              ${medianSpendByUser[me.id].toFixed(2)}
-            </span>
+            <span className="font-semibold">${mySpend.toFixed(2)}</span>
           </p>
         )}
         <p className="text-xs text-ink/40">

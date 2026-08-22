@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getTrip, getTripExpenses, getTripSettlements, getUsers } from "@/lib/data";
-import { computeBalance } from "@/lib/balance";
+import {
+  getTrip,
+  getTripExpenses,
+  getTripSettlements,
+  getTripParticipants,
+} from "@/lib/data";
+import { computeGroupBalance } from "@/lib/balance";
 import { computeCategoryBreakdown } from "@/lib/breakdown";
 import { addSettlementAction } from "@/lib/actions";
 import { SettleForm } from "@/components/SettleForm";
-import { BalanceText } from "@/components/BalanceText";
+import { BalanceSummary } from "@/components/BalanceSummary";
 import { CategoryBreakdownTable } from "@/components/CategoryBreakdownTable";
 
 export default async function SettlePage({
@@ -17,13 +22,13 @@ export default async function SettlePage({
   const trip = await getTrip(id);
   if (!trip) notFound();
 
-  const [users, expenses, settlements] = await Promise.all([
-    getUsers(),
+  const [participants, expenses, settlements] = await Promise.all([
+    getTripParticipants(id),
     getTripExpenses(id),
     getTripSettlements(id),
   ]);
-  const balance = computeBalance(users, expenses, settlements);
-  const { rows, totals } = computeCategoryBreakdown(users, expenses);
+  const balance = computeGroupBalance(participants, expenses, settlements);
+  const { rows, totals } = computeCategoryBreakdown(participants, expenses);
 
   return (
     <div className="flex flex-col gap-5">
@@ -36,13 +41,13 @@ export default async function SettlePage({
       </div>
 
       <div className="rounded-2xl bg-lavender p-4 text-center font-medium">
-        <BalanceText users={users} balance={balance} />
+        <BalanceSummary participants={participants} balance={balance} />
       </div>
 
       <SettleForm
         action={addSettlementAction}
         tripId={id}
-        users={users}
+        participants={participants}
         balance={balance}
       />
 
@@ -50,7 +55,7 @@ export default async function SettlePage({
         <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/50">
           Who paid what
         </h2>
-        <CategoryBreakdownTable users={users} rows={rows} totals={totals} />
+        <CategoryBreakdownTable users={participants} rows={rows} totals={totals} />
       </section>
     </div>
   );

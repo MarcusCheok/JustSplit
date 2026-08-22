@@ -6,7 +6,7 @@ export function CategoryBreakdownTable({
   rows,
   totals,
 }: {
-  users: [User, User];
+  users: User[];
   rows: CategoryRow[];
   totals: Record<number, number>;
 }) {

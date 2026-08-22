@@ -7,15 +7,18 @@ export type CategoryRow = {
 
 /** How much each person paid, broken down by expense category. */
 export function computeCategoryBreakdown(
-  users: [User, User],
+  users: User[],
   expenses: Expense[]
 ): { rows: CategoryRow[]; totals: Record<number, number> } {
+  const emptyRow = () =>
+    Object.fromEntries(users.map((u) => [u.id, 0])) as Record<number, number>;
+
   const byCategory = new Map<string, Record<number, number>>();
-  const totals: Record<number, number> = { [users[0].id]: 0, [users[1].id]: 0 };
+  const totals = emptyRow();
 
   for (const expense of expenses) {
     const label = expense.category ?? "Uncategorized";
-    const row = byCategory.get(label) ?? { [users[0].id]: 0, [users[1].id]: 0 };
+    const row = byCategory.get(label) ?? emptyRow();
     row[expense.paid_by_user_id] =
       (row[expense.paid_by_user_id] ?? 0) + expense.amount;
     byCategory.set(label, row);
