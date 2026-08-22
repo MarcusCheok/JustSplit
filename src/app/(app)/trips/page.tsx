@@ -23,6 +23,14 @@ export default async function TripsPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <Link
+        href="/trips/history"
+        prefetch={false}
+        className="flex items-center justify-center gap-2 rounded-2xl bg-lavender p-4 text-center font-medium shadow-sm ring-1 ring-black/5 transition hover:shadow-md"
+      >
+        🕰️ Trip History &amp; Stats
+      </Link>
+
       {noTripsAtAll ? (
         <div className="flex flex-col items-center gap-1 py-6 text-center">
           <span className="text-3xl">✨</span>

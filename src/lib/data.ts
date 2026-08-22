@@ -68,6 +68,16 @@ export async function getTripExpenses(tripId: string): Promise<Expense[]> {
   })) as Expense[];
 }
 
+export async function getAllExpensePaidTotals(): Promise<
+  { trip_id: string; paid_by_user_id: number; amount: number }[]
+> {
+  const { data, error } = await supabase
+    .from("expenses")
+    .select("trip_id, paid_by_user_id, amount");
+  if (error) throw error;
+  return data as { trip_id: string; paid_by_user_id: number; amount: number }[];
+}
+
 export async function getTripSettlements(tripId: string): Promise<Settlement[]> {
   const { data, error } = await supabase
     .from("settlements")
