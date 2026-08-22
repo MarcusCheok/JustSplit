@@ -9,6 +9,7 @@ import {
 import { computeBalance } from "@/lib/balance";
 import { computeTripsSnapshot } from "@/lib/analytics";
 import { BalanceText } from "@/components/BalanceText";
+import { TripsSnapshotSummary } from "@/components/TripsSnapshotSummary";
 import type { Trip, User } from "@/lib/types";
 
 export default async function TripHistoryPage() {
@@ -97,44 +98,13 @@ async function SnapshotSection({
     );
   }
 
-  const [a, b] = users;
-  const n = snapshot.tripsTogetherCount;
-  const bothZero =
-    snapshot.medianPaidByUser[a.id] === 0 && snapshot.medianPaidByUser[b.id] === 0;
-
   return (
     <div className="flex flex-col gap-3 rounded-2xl bg-lavender p-4">
-      <p
-        className="text-center font-medium"
-        aria-label={`${a.name} and ${b.name} have taken ${n} trip${n === 1 ? "" : "s"} together`}
-      >
-        🧳 {a.name} and {b.name} — {n} trip{n === 1 ? "" : "s"} together
-      </p>
-
-      <div className="flex flex-col gap-1.5 rounded-xl bg-white/60 p-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink/50">
-          Typical spend per trip
-        </p>
-        {bothZero ? (
-          <p className="text-sm text-ink/60">Nothing logged yet.</p>
-        ) : (
-          users.map((u) => (
-            <p
-              key={u.id}
-              className="text-sm"
-              aria-label={`${u.name} typically pays $${snapshot.medianPaidByUser[u.id].toFixed(2)} per trip`}
-            >
-              {u.emoji} {u.name} typically pays{" "}
-              <span className="font-semibold">
-                ${snapshot.medianPaidByUser[u.id].toFixed(2)}
-              </span>
-            </p>
-          ))
-        )}
-        <p className="text-xs text-ink/40">
-          Based on what each person paid, not their share of costs.
-        </p>
-      </div>
+      <TripsSnapshotSummary
+        users={users}
+        tripCount={snapshot.tripsTogetherCount}
+        medianPaidByUser={snapshot.medianPaidByUser}
+      />
     </div>
   );
 }

@@ -99,3 +99,57 @@ flows, no changes to the core add-expense/settle/close-trip loop.
   own per-section friendly-error UI straight to Next's default error boundary — pre-existing,
   app-wide, not introduced by this feature; logged as a non-blocking follow-up. Full report at
   `docs/product/QA_REPORT.md`. Recommendation: ship.
+- **Follow-up build (software-engineer), standalone — 2026-08-22** — product owner requested
+  the shipped Snapshot section be personalized to whoever's currently using the device, instead
+  of showing both people's numbers side by side. Scope, confirmed directly with the product
+  owner as settled (not re-opened for design): (1) "Typical spend per trip" shows only the
+  current user's own median (e.g. "You typically pay $340 per trip"), not both users' rows; (2)
+  the trips-together line becomes "You've been on N trip(s) with &lt;other person&gt;" instead
+  of "&lt;A&gt; and &lt;B&gt; — N trips together"; (3) `computeTripsSnapshot()` in
+  `src/lib/analytics.ts` is completely unchanged — still computes both users' medians and the
+  same trip count; this is purely a presentation change over already-computed data.
+  Architecturally, this page is a Server Component with no server-side "current user" (no real
+  auth — see PRD.md §Data Model); "current user" only exists client-side via
+  `CurrentUserProvider`/`useCurrentUser()` (localStorage-backed), the same pattern already used
+  by `Header.tsx` and `ExpenseForm.tsx`. Extracted the snapshot's presentation into a new small
+  Client Component, `src/components/TripsSnapshotSummary.tsx`, which takes the already-computed
+  `tripCount` and `medianPaidByUser` as props (no new data fetching, no client-side Supabase
+  calls) and uses `useCurrentUser()` purely to decide labeling — picks the current user's own
+  median to display and the *other* user's name/emoji for the "with &lt;other person&gt;" line.
+  `src/app/(app)/trips/history/page.tsx`'s `SnapshotSection` (still a Server Component, still
+  doing the same data fetch + try/catch error handling + the `tripCount === 0` empty state,
+  none of which changed) now just renders `<TripsSnapshotSummary users={users}
+  tripCount={snapshot.tripsTogetherCount} medianPaidByUser={snapshot.medianPaidByUser} />`
+  instead of the old inline both-users JSX; the old per-user `.map()` loop and the "&lt;A&gt;
+  and &lt;B&gt; — N trips together" combined string are gone from the codebase (grepped to
+  confirm nothing dangling). `currentUser` is typed `User | null` by the provider but is
+  narrowed with a non-null assertion in the new component, per the documented guarantee that
+  every `(app)` page is wrapped in `CurrentUserProvider`, which itself gates all children
+  (including this component) behind a mandatory "who's this" picker until a user is selected —
+  so `currentUser` is always non-null by the time this component actually renders. Root cause
+  worth noting for future manual QA on this app: `CurrentUserProvider` returns `null` during SSR
+  (its `hydrated` state starts `false` and only flips in a `useEffect`, which doesn't run
+  server-side), so a plain `curl` fetch of any `(app)` page renders blank for the entire
+  subtree — the previous build/QA rounds' curl-based verification only worked because the old
+  Snapshot markup was fully computed server-side as literal strings that got serialized into the
+  child props passed across the client-component boundary regardless of what the boundary
+  itself rendered; a genuinely client-rendered value like the new personalized copy has no such
+  fallback and needs real JS execution to observe. Verified this build instead with a headless
+  Playwright browser (installed standalone into the scratchpad, not added to this repo's
+  `package.json`/lockfile): logged in with the real passcode against the live dev server and
+  real Supabase data (the same single real "Melbourne" trip used in prior verification rounds,
+  not modified), selected Marcus via the identity picker, and confirmed `/trips/history` renders
+  "🧳 You've been on 1 trip with 🐰 Baegirl" and "🐻 You typically pay $699.30" — then switched
+  identity via the Header pill and confirmed it re-renders as "You've been on 1 trip with
+  Marcus" / "You typically pay $1350.00" for Baegirl, matching the exact figures independently
+  hand-tallied in the original build/QA rounds, just now attributed to whichever person is
+  "you." Confirmed via `body.innerText()` that neither of the old combined phrasings ("and
+  Baegirl —" / "and Marcus —") remains anywhere on the page. `tsc --noEmit`, `eslint` (changed
+  files), `next build`, and the existing 10 `analytics.test.ts` unit tests all pass unchanged —
+  confirming `computeTripsSnapshot()` itself was untouched. Known, explicitly accepted tradeoff
+  (not solved, not gold-plated around, per direct product-owner instruction): this reintroduces
+  "You" framing that the original UX_SPEC deliberately avoided given there's no real auth — if
+  the device gets picked up by the other person before they re-select their name via the Header
+  pill, they'll see the wrong person's stats labeled as their own. Product owner has explicitly
+  accepted this for this private two-person app; no new auth, warning banner, or defensive
+  handling was added.
