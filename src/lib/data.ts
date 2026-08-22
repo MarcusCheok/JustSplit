@@ -68,14 +68,26 @@ export async function getTripExpenses(tripId: string): Promise<Expense[]> {
   })) as Expense[];
 }
 
-export async function getAllExpensePaidTotals(): Promise<
-  { trip_id: string; paid_by_user_id: number; amount: number }[]
+export async function getAllExpenseSplitTotals(): Promise<
+  { trip_id: string; user_id: number; amount: number }[]
 > {
   const { data, error } = await supabase
-    .from("expenses")
-    .select("trip_id, paid_by_user_id, amount");
+    .from("expense_splits")
+    .select("user_id, amount, expenses(trip_id)");
   if (error) throw error;
-  return data as { trip_id: string; paid_by_user_id: number; amount: number }[];
+  return (
+    (data ?? []) as unknown as {
+      user_id: number;
+      amount: number;
+      expenses: { trip_id: string } | null;
+    }[]
+  )
+    .filter((row) => row.expenses)
+    .map((row) => ({
+      trip_id: row.expenses!.trip_id,
+      user_id: row.user_id,
+      amount: row.amount,
+    }));
 }
 
 export async function getTripSettlements(tripId: string): Promise<Settlement[]> {

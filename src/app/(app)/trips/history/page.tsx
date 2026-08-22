@@ -4,7 +4,7 @@ import {
   getUsers,
   getTripExpenses,
   getTripSettlements,
-  getAllExpensePaidTotals,
+  getAllExpenseSplitTotals,
 } from "@/lib/data";
 import { computeBalance } from "@/lib/balance";
 import { computeTripsSnapshot } from "@/lib/analytics";
@@ -83,7 +83,7 @@ async function SnapshotSection({
 }) {
   let snapshot;
   try {
-    const expenseTotals = await getAllExpensePaidTotals();
+    const expenseTotals = await getAllExpenseSplitTotals();
     snapshot = computeTripsSnapshot(users, trips, expenseTotals);
   } catch {
     return <ErrorCard message="Couldn't load your trip stats — try again." />;
@@ -103,7 +103,7 @@ async function SnapshotSection({
       <TripsSnapshotSummary
         users={users}
         tripCount={snapshot.tripsTogetherCount}
-        medianPaidByUser={snapshot.medianPaidByUser}
+        medianSpendByUser={snapshot.medianSpendByUser}
       />
     </div>
   );
@@ -174,7 +174,7 @@ function HistoryTripCard({
     <Link
       href={`/trips/${trip.id}`}
       prefetch={false}
-      className={`flex flex-col gap-1 rounded-2xl p-4 shadow-sm ring-1 ring-black/5 transition hover:shadow-md ${
+      className={`flex flex-col gap-1 rounded-2xl p-4 shadow-sm ring-1 ring-black/5 transition hover:shadow-md active:scale-[0.97] ${
         trip.status === "closed" ? "bg-white/60 text-ink/60" : "bg-white"
       }`}
     >

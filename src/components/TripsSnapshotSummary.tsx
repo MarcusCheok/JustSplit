@@ -7,17 +7,17 @@ import type { User } from "@/lib/types";
  * Personalizes the already-computed /trips/history snapshot numbers to
  * whichever person is currently using the device (via CurrentUserProvider /
  * localStorage — there's no server-side "current user" concept, see PRD §2).
- * No data fetching here: tripCount and medianPaidByUser are passed in as
+ * No data fetching here: tripCount and medianSpendByUser are passed in as
  * server-computed props from computeTripsSnapshot(), unchanged.
  */
 export function TripsSnapshotSummary({
   users,
   tripCount,
-  medianPaidByUser,
+  medianSpendByUser,
 }: {
   users: [User, User];
   tripCount: number;
-  medianPaidByUser: Record<number, number>;
+  medianSpendByUser: Record<number, number>;
 }) {
   // Every (app) page is wrapped in CurrentUserProvider, which renders the
   // "who's this" picker instead of children until a user is selected — by
@@ -26,7 +26,7 @@ export function TripsSnapshotSummary({
   const me = currentUser as User;
   const other = users.find((u) => u.id !== me.id) ?? users[0];
 
-  const bothZero = users.every((u) => medianPaidByUser[u.id] === 0);
+  const bothZero = users.every((u) => medianSpendByUser[u.id] === 0);
 
   return (
     <>
@@ -47,16 +47,16 @@ export function TripsSnapshotSummary({
         ) : (
           <p
             className="text-sm"
-            aria-label={`You typically pay $${medianPaidByUser[me.id].toFixed(2)} per trip`}
+            aria-label={`You typically spend $${medianSpendByUser[me.id].toFixed(2)} per trip`}
           >
-            {me.emoji} You typically pay{" "}
+            {me.emoji} You typically spend{" "}
             <span className="font-semibold">
-              ${medianPaidByUser[me.id].toFixed(2)}
+              ${medianSpendByUser[me.id].toFixed(2)}
             </span>
           </p>
         )}
         <p className="text-xs text-ink/40">
-          Based on what you paid, not your share of costs.
+          Based on your share of each trip&apos;s costs, not who paid at checkout.
         </p>
       </div>
     </>

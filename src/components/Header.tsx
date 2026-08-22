@@ -14,7 +14,7 @@ export function Header() {
       </Link>
       <button
         onClick={() => other && setCurrentUser(other.id)}
-        className="flex items-center gap-1.5 rounded-full bg-lavender px-3 py-1.5 text-sm font-medium"
+        className="flex items-center gap-1.5 rounded-full bg-lavender px-3 py-1.5 text-sm font-medium transition active:scale-[0.97]"
         title="Not you? Tap to switch"
       >
         <span>{currentUser?.emoji}</span>

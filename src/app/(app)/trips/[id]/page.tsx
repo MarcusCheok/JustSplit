@@ -46,14 +46,14 @@ export default async function TripDetailPage({
           <Link
             href={`/trips/${id}/expenses/new`}
             prefetch={false}
-            className="rounded-2xl bg-mint-dark px-4 py-3 text-center font-semibold text-white"
+            className="rounded-2xl bg-mint-dark px-4 py-3 text-center font-semibold text-white transition active:scale-[0.97]"
           >
             + Add expense
           </Link>
           <Link
             href={`/trips/${id}/settle`}
             prefetch={false}
-            className="rounded-2xl bg-blush-dark px-4 py-3 text-center font-semibold text-white"
+            className="rounded-2xl bg-blush-dark px-4 py-3 text-center font-semibold text-white transition active:scale-[0.97]"
           >
             Settle up
           </Link>
@@ -61,7 +61,7 @@ export default async function TripDetailPage({
       ) : (
         <form action={reopenTripAction}>
           <input type="hidden" name="tripId" value={id} />
-          <button className="w-full rounded-2xl bg-white px-4 py-2 text-sm ring-1 ring-black/10">
+          <button className="w-full rounded-2xl bg-mint px-4 py-2 text-sm font-medium text-ink shadow-sm ring-1 ring-mint-dark/40 transition active:scale-[0.97]">
             Reopen trip
           </button>
         </form>
@@ -81,7 +81,7 @@ export default async function TripDetailPage({
               key={expense.id}
               href={`/trips/${id}/expenses/${expense.id}/edit`}
               prefetch={false}
-              className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5"
+              className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5 transition active:scale-[0.97]"
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cream text-lg">
                 {categoryEmoji(expense.category)}
@@ -128,7 +128,7 @@ export default async function TripDetailPage({
       {trip.status === "open" && (
         <form action={closeTripAction} className="mt-2">
           <input type="hidden" name="tripId" value={id} />
-          <button className="w-full rounded-2xl bg-white px-4 py-2 text-sm text-ink/60 ring-1 ring-black/10">
+          <button className="w-full rounded-2xl bg-white px-4 py-2 text-sm text-ink shadow-sm ring-1 ring-black/10 transition active:scale-[0.97]">
             Close trip
           </button>
         </form>

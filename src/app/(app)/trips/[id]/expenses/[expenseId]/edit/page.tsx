@@ -32,7 +32,7 @@ export default async function EditExpensePage({
       <form action={deleteExpenseAction}>
         <input type="hidden" name="tripId" value={expense.trip_id} />
         <input type="hidden" name="expenseId" value={expense.id} />
-        <button className="w-full rounded-2xl bg-white px-4 py-2 text-sm text-rose-500 ring-1 ring-black/10">
+        <button className="w-full rounded-2xl bg-white px-4 py-2 text-sm font-medium text-rose-500 shadow-sm ring-1 ring-rose-200 transition active:scale-[0.97]">
           Delete expense
         </button>
       </form>

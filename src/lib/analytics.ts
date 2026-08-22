@@ -2,7 +2,7 @@ import type { Trip, User } from "./types";
 
 export type TripsSnapshot = {
   tripCount: number; // F3 — excludes "General"
-  medianPaidByUser: Record<number, number>; // F4 — one value per user id, excludes "General"
+  medianSpendByUser: Record<number, number>; // F4 — one value per user id, excludes "General"
   tripsTogetherCount: number; // F5 — identical to tripCount, see PRD rationale
 };
 
@@ -13,29 +13,30 @@ export type TripsSnapshot = {
 export function computeTripsSnapshot(
   users: [User, User],
   trips: Trip[],
-  expenseTotals: { trip_id: string; paid_by_user_id: number; amount: number }[]
+  expenseTotals: { trip_id: string; user_id: number; amount: number }[]
 ): TripsSnapshot {
   const countedTrips = trips.filter((t) => t.name !== "General");
 
-  // Sum paid-by-user-per-trip in one pass (Map keyed by `${tripId}:${userId}`),
-  // then read one number per user per counted trip (0 if they paid nothing that trip).
-  const paidByTripAndUser = new Map<string, number>();
+  // Sum each user's split share (their real cost, not who fronted the cash)
+  // per trip in one pass (Map keyed by `${tripId}:${userId}`), then read one
+  // number per user per counted trip (0 if they had no share that trip).
+  const spendByTripAndUser = new Map<string, number>();
   for (const e of expenseTotals) {
-    const key = `${e.trip_id}:${e.paid_by_user_id}`;
-    paidByTripAndUser.set(key, (paidByTripAndUser.get(key) ?? 0) + e.amount);
+    const key = `${e.trip_id}:${e.user_id}`;
+    spendByTripAndUser.set(key, (spendByTripAndUser.get(key) ?? 0) + e.amount);
   }
 
-  const medianPaidByUser: Record<number, number> = {};
+  const medianSpendByUser: Record<number, number> = {};
   for (const user of users) {
     const perTrip = countedTrips.map((t) =>
-      round2(paidByTripAndUser.get(`${t.id}:${user.id}`) ?? 0)
+      round2(spendByTripAndUser.get(`${t.id}:${user.id}`) ?? 0)
     );
-    medianPaidByUser[user.id] = median(perTrip);
+    medianSpendByUser[user.id] = median(perTrip);
   }
 
   return {
     tripCount: countedTrips.length,
-    medianPaidByUser,
+    medianSpendByUser,
     tripsTogetherCount: countedTrips.length, // F5 collapses into F3 — see PRD rationale
   };
 }

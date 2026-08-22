@@ -1,63 +1,64 @@
 # Trips History & Analytics — Handoff
 
-_Last updated by: software-engineer · build mode (standalone follow-up)_
+_Last updated by: software-engineer · build mode (standalone follow-up, two independent fixes)_
 
 ## Where things stand
 
-Shipped feature from the original pipeline (see CONTEXT.md log through QA round 1) is
-unchanged and still shipping. This round implements a scoped, product-owner-requested follow-up
-to `src/app/(app)/trips/history/page.tsx`'s Snapshot section: it's now personalized to whoever's
-currently using the device instead of showing both people's numbers side by side.
+Two product-owner-requested fixes shipped this round, both independent of each other and of the
+prior personalization follow-up (see CONTEXT.md log through the previous round).
 
-- "Typical spend per trip" now shows only the current user's own median (e.g. "You typically
-  pay $699.30 per trip"), not both users' rows.
-- The trips-together line is now "You've been on N trip(s) with &lt;other person&gt;" instead of
-  "&lt;A&gt; and &lt;B&gt; — N trips together."
-- `computeTripsSnapshot()` in `src/lib/analytics.ts` is completely unchanged — still computes
-  both users' medians and the same trip count. This was purely a presentation change.
-- New file: `src/components/TripsSnapshotSummary.tsx` — a small Client Component that takes the
-  already-server-computed `tripCount` and `medianPaidByUser` as props (no new data fetching, no
-  client-side Supabase calls) and uses the existing `useCurrentUser()` context
-  (`src/components/CurrentUserProvider.tsx`, same pattern as `Header.tsx`/`ExpenseForm.tsx`)
-  purely to decide which numbers/names to show.
-- `src/app/(app)/trips/history/page.tsx`'s `SnapshotSection` is unchanged except that its old
-  inline both-users JSX (per-user `.map()` typical-spend rows, "&lt;A&gt; and &lt;B&gt; — N trips
-  together" combined line) is fully removed and replaced with a call to the new component. Data
-  fetching, the try/catch error card, and the `tripCount === 0` empty state are all untouched.
-  Grepped the codebase to confirm the old phrasing and per-user loop don't linger anywhere.
+**Fix 1 — "Typical spend per trip" now uses real cost share, not who paid at checkout.**
+`getAllExpensePaidTotals()` in `src/lib/data.ts` is gone, replaced by
+`getAllExpenseSplitTotals()`, which queries `expense_splits` (embedding `expenses(trip_id)`) and
+returns each user's actual split `amount` per trip. `computeTripsSnapshot()` in
+`src/lib/analytics.ts` now groups by `user_id` and its output field is `medianSpendByUser` (was
+`medianPaidByUser`) — same median/rounding logic, different (correct) input. `src/lib/balance.ts`
+and `src/lib/breakdown.ts` are untouched; they still correctly use `paid_by_user_id` for
+settle-up math, a separate and still-valid concept. Copy on `/trips/history` now says "You
+typically spend $X" with caption "Based on your share of each trip's costs, not who paid at
+checkout." All 10 `analytics.test.ts` tests updated (mechanical field rename only, same numeric
+expectations) and passing. Verified against the real "Melbourne" trip (Flights $1350 paid by
+Baegirl split 675/675, Airbnb $699.30 paid by Marcus split 349.65/349.65): both users' true share
+is $1024.65 each — confirmed live via Playwright for both identities, replacing the old
+paid-based $699.30 / $1350.00 figures.
 
-Verified: `tsc --noEmit`, `eslint` (changed files), `next build`, and the existing 10
-`analytics.test.ts` unit tests all pass unchanged (confirms the underlying computation wasn't
-touched). Manually verified in a real browser — plain `curl` doesn't work for this one: I
-discovered (and logged in CONTEXT.md) that `CurrentUserProvider` returns `null` during SSR until
-its `useEffect`-driven `hydrated` flag flips client-side, so a JS-less `curl` fetch renders blank
-for this and every other `(app)` page content; the previous build/QA rounds' curl-based checks
-only worked because the *old* Snapshot markup was server-computed literal strings passed as
-opaque children props across that boundary, which the new client-rendered personalization has no
-equivalent of. Installed a standalone headless Playwright (not added to this repo's
-package.json/lockfile — lives only in the session scratchpad) against the real dev server and
-real Supabase data (the same single "Melbourne" trip used throughout prior rounds, not modified):
-confirmed the snapshot personalizes and swaps correctly when switching identity via the Header
-pill — Marcus sees "You've been on 1 trip with Baegirl" / "You typically pay $699.30", Baegirl
-sees "You've been on 1 trip with Marcus" / "You typically pay $1350.00" — matching the exact
-figures hand-tallied in the original build/QA rounds. Confirmed via full-page text extraction
-that neither old combined-phrasing string remains on the page.
+**Fix 2 — press/tap feedback app-wide, plus three low-contrast buttons.** Added
+`transition active:scale-[0.97]` (one consistent value, inline Tailwind utilities, no shared CSS
+class, matching this codebase's convention) to every button and clickable card: all primary
+submit buttons, `ExpenseForm`'s split-mode chips, the paid-by/who-paid radio pills, the identity
+picker and Header identity-switch pill, `/trips` and `/trips/history` trip cards, the history
+entry-point pill, expense-row cards, and the login submit button. Fixed the three buttons that
+read as disabled (plain `bg-white` + faint ring, no shadow): "Close trip" now uses full-strength
+`text-ink` + `shadow-sm`; "Reopen trip" got a `bg-mint`/`ring-mint-dark/40` positive-action tint +
+`shadow-sm`; "Delete expense" kept its rose/destructive signal but added `shadow-sm` and a
+`ring-rose-200` tint instead of plain black/10.
 
-Known, explicitly accepted tradeoff (per direct product-owner instruction, not solved or
-gold-plated around): this reintroduces "You" framing that the original UX_SPEC deliberately
-avoided because there's no real auth. If the device is picked up by the other person before they
-re-select their name via the Header pill, they'll see the wrong person's stats labeled as their
-own. Product owner has explicitly accepted this for this private two-person app — no new auth,
-warning banner, or defensive handling was added.
+Verified: `tsc --noEmit`, `next build`, `vitest run` (10/10 pass), and `eslint` clean on every
+changed file (one pre-existing, untouched `react-hooks/set-state-in-effect` finding in
+`CurrentUserProvider.tsx` surfaces only on a full `eslint src` run — unrelated to this round,
+not fixed as it's out of scope for either requested fix). Ran the real dev server against real
+Supabase data: confirmed the corrected spend figures for both identities via the Header switch
+pill, confirmed via a held mousedown that `active:scale-[0.97]` genuinely animates the "+ Add
+expense" button's computed `scale` from 1 to 0.97, and screenshotted the trip-detail (open and
+closed states) and expense-edit pages to confirm Close/Reopen/Delete no longer read as disabled.
+Exercised the real Close/Reopen toggle live via the UI to verify the button swap, then reopened
+it; a final read-only Supabase query confirmed the real trip/expenses/splits are byte-identical
+to their pre-verification state (1 open trip, 2 expenses, 4 splits).
 
 ## Next step
 
-Ready for a human/product-owner look, or a QA re-pass if the team wants one for this scoped
-change. Nothing else pending from this round.
+Ready for a human/product-owner look, or a QA re-pass if the team wants one for these two scoped
+fixes. Nothing else pending from this round.
 
 ## Blockers / open questions
 
-None. Carried-over, still-non-blocking, pre-existing item from QA round 1 (not touched by this
-round): `src/app/(app)/layout.tsx`'s `getUsers()` call is unguarded, so a full Supabase outage
-would skip past any per-section friendly-error UI straight to Next's default error boundary —
-app-wide, not introduced by either this feature or this follow-up.
+None from this round. Carried-over, still-non-blocking items, not touched by this round:
+- `src/app/(app)/layout.tsx`'s `getUsers()` call is unguarded, so a full Supabase outage would
+  skip past any per-section friendly-error UI straight to Next's default error boundary —
+  app-wide, pre-existing, not introduced by this or any prior round.
+- `src/components/CurrentUserProvider.tsx`'s hydration `useEffect` calls `setCurrentUserState`
+  synchronously in the effect body, which a full `eslint src` run flags as
+  `react-hooks/set-state-in-effect`. Pre-existing (present before this round's edits, which only
+  touched an unrelated className in the same file), functionally harmless (single mount-time
+  sync, not a render loop), not fixed since it's unrelated to either of this round's requested
+  fixes.

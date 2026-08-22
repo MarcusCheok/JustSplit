@@ -26,7 +26,7 @@ export default async function TripsPage() {
       <Link
         href="/trips/history"
         prefetch={false}
-        className="flex items-center justify-center gap-2 rounded-2xl bg-lavender p-4 text-center font-medium shadow-sm ring-1 ring-black/5 transition hover:shadow-md"
+        className="flex items-center justify-center gap-2 rounded-2xl bg-lavender p-4 text-center font-medium shadow-sm ring-1 ring-black/5 transition hover:shadow-md active:scale-[0.97]"
       >
         🕰️ Trip History &amp; Stats
       </Link>
@@ -67,7 +67,7 @@ export default async function TripsPage() {
         />
         <button
           type="submit"
-          className="rounded-xl bg-mint-dark px-4 py-2 text-sm font-semibold text-white"
+          className="rounded-xl bg-mint-dark px-4 py-2 text-sm font-semibold text-white transition active:scale-[0.97]"
         >
           + Add
         </button>
@@ -104,7 +104,7 @@ function TripCard({
     <Link
       href={`/trips/${tripId}`}
       prefetch={false}
-      className={`flex flex-col gap-1 rounded-2xl p-4 shadow-sm ring-1 ring-black/5 transition hover:shadow-md ${
+      className={`flex flex-col gap-1 rounded-2xl p-4 shadow-sm ring-1 ring-black/5 transition hover:shadow-md active:scale-[0.97] ${
         dimmed ? "bg-white/60 text-ink/60" : "bg-white"
       }`}
     >

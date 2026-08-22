@@ -59,7 +59,7 @@ export function CurrentUserProvider({
             <button
               key={u.id}
               onClick={() => setCurrentUser(u.id)}
-              className="flex w-32 flex-col items-center gap-2 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5 transition hover:scale-105 hover:shadow-md"
+              className="flex w-32 flex-col items-center gap-2 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5 transition hover:scale-105 hover:shadow-md active:scale-[0.97]"
             >
               <span className="text-4xl">{u.emoji}</span>
               <span className="font-semibold">{u.name}</span>

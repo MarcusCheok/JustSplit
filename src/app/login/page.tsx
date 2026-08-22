@@ -30,7 +30,7 @@ export default async function LoginPage({
         )}
         <button
           type="submit"
-          className="rounded-2xl bg-blush-dark px-4 py-3 font-semibold text-white shadow-sm transition hover:brightness-105"
+          className="rounded-2xl bg-blush-dark px-4 py-3 font-semibold text-white shadow-sm transition hover:brightness-105 active:scale-[0.97]"
         >
           Let me in
         </button>

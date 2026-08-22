@@ -153,3 +153,67 @@ flows, no changes to the core add-expense/settle/close-trip loop.
   pill, they'll see the wrong person's stats labeled as their own. Product owner has explicitly
   accepted this for this private two-person app; no new auth, warning banner, or defensive
   handling was added.
+- **Follow-up build (software-engineer), standalone — 2026-08-22 — two independent fixes.**
+  **Fix 1 (wrong "typical spend" metric):** the Snapshot's F4 stat was computing each person's
+  median from `expenses.paid_by_user_id`/`amount` — how much they fronted at checkout — not
+  their actual cost share. Product owner: "I could pay $2000, but then collect owed from my
+  friends and my net spend is only $1000." Replaced `getAllExpensePaidTotals()` in
+  `src/lib/data.ts` with `getAllExpenseSplitTotals()`, which queries `expense_splits` embedding
+  `expenses(trip_id)` (the reverse direction of the existing `expenses` → `expense_splits(user_id,
+  amount)` embed in `getTripExpenses`) and returns `{ trip_id, user_id, amount }[]` — `amount`
+  here is each user's actual split share of the expense, not who paid. Confirmed via grep this
+  was the only caller before deleting it outright (per explicit product-owner instruction, no
+  back-compat kept). `computeTripsSnapshot()` in `src/lib/analytics.ts` now groups by `user_id`
+  instead of `paid_by_user_id`, and its output field is renamed `medianPaidByUser` →
+  `medianSpendByUser` throughout (type, JSDoc, body) to make the new semantics explicit; the
+  median/rounding logic itself is untouched. `src/lib/analytics.test.ts` fixtures/assertions
+  mechanically renamed to match (`paid_by_user_id`→`user_id`, `medianPaidByUser`→
+  `medianSpendByUser`); all 10 existing test cases still pass with their original numeric
+  expectations, since the median algorithm didn't change, only which field feeds it.
+  `src/app/(app)/trips/history/page.tsx` and `src/components/TripsSnapshotSummary.tsx` updated
+  to the new import/prop names; copy changed "You typically pay $X" → "You typically spend $X"
+  and the caption flipped from "Based on what you paid, not your share of costs" (now
+  backwards) to "Based on your share of each trip's costs, not who paid at checkout." Did not
+  touch `src/lib/balance.ts` or `src/lib/breakdown.ts` — both correctly use `paid_by_user_id` for
+  settle-up/balance math, a distinct and still-valid "who fronted the cash" concept, out of
+  scope for this fix. Verified against real Supabase data (read-only queries, no mutation): the
+  real "Melbourne" trip has two expenses — Flights $1350 (paid by Baegirl, split 675/675) and
+  Airbnb $699.30 (paid by Marcus, split 349.65/349.65) — so each user's true per-trip spend share
+  is 675 + 349.65 = $1024.65, identical for both since every expense splits 50/50. Previously the
+  page showed Marcus $699.30 / Baegirl $1350.00 (paid amounts); confirmed via headless Playwright
+  against the live dev server, switching identity through the Header pill, that both identities
+  now correctly show "$1024.65" with the corrected copy, and neither of the old strings remains.
+  **Fix 2 (button/card press feedback + three low-contrast buttons):** no clickable element in
+  the app gave any pressed/tap feedback. Added `transition active:scale-[0.97]` (one consistent
+  value app-wide, inline Tailwind utilities only, matching the codebase's no-shared-CSS-class
+  convention) to every button and clickable card: primary submit buttons (Add expense, Save
+  changes, Record payment, + Add trip), `ExpenseForm`'s `SplitChip` chips, the "paid by"/"who
+  paid" radio-styled pills in `ExpenseForm.tsx`/`SettleForm.tsx`, the identity-picker buttons and
+  Header's identity-switch pill, the trip cards on `/trips` and `/trips/history` (`TripCard`,
+  `HistoryTripCard`) and the expense-row cards on `/trips/[id]`, the `/trips/history` entry-point
+  pill on `/trips`, the login submit button, and the Close trip/Reopen trip/Delete expense
+  buttons. Also fixed the three specifically-flagged low-contrast buttons, all previously
+  `bg-white` + faint `ring-1 ring-black/10` with no shadow, reading as disabled: "Close trip"
+  (`src/app/(app)/trips/[id]/page.tsx`) — swapped `text-ink/60` for full-strength `text-ink` and
+  added `shadow-sm`, keeping the neutral white treatment since it's a plain (non-destructive,
+  non-primary) action; "Reopen trip" (same file) — given a `bg-mint` tint with a
+  `ring-mint-dark/40` ring and `shadow-sm`, signaling a positive/reactivating action, consistent
+  with the app's existing mint-for-positive-actions pattern (`+ Add expense` uses `bg-mint-dark`);
+  "Delete expense" (`.../expenses/[expenseId]/edit/page.tsx`) — kept the `text-rose-500` signal
+  but swapped the plain `ring-black/10` for a `ring-rose-200` tint and added `shadow-sm`, so it
+  reads as a deliberately distinct destructive action rather than a weak neutral one. Verified
+  `tsc --noEmit`, `next build`, and `eslint` on every changed file (all clean — one pre-existing,
+  untouched `react-hooks/set-state-in-effect` lint finding in `CurrentUserProvider.tsx`'s
+  hydration `useEffect` surfaces on a full `eslint src` run, unrelated to this round's edits, not
+  fixed since out of scope). Verified live via headless Playwright: pressed/held the "+ Add
+  expense" button and confirmed `getComputedStyle(el).scale` genuinely animates from `1` to
+  `0.97` while the mouse is down (had to wait out the ~150ms CSS transition before reading the
+  computed value — an initial read taken synchronously right after `mousedown` misleadingly
+  showed `1`, since the transition hadn't advanced any frames yet); screenshotted the trip detail
+  page in both open/closed states and the expense-edit page to confirm "Close trip," "Reopen
+  trip," and "Delete expense" now read as clearly tappable against the app's pastel palette
+  rather than disabled. To exercise the real Close/Reopen toggle end-to-end without leaving stray
+  state, closed the real "Melbourne" trip via the UI, confirmed the button swap, then reopened it
+  via the UI; a final read-only Supabase query confirmed the trip is back to `status: "open"`,
+  `closed_at: null`, with its original 2 expenses and 4 expense_splits rows all byte-identical to
+  before.

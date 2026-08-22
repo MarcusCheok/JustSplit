@@ -85,7 +85,7 @@ export function ExpenseForm({
           {users.map((u) => (
             <label
               key={u.id}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 has-checked:bg-mint has-checked:ring-mint-dark"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 transition has-checked:bg-mint has-checked:ring-mint-dark active:scale-[0.97]"
             >
               <input
                 type="radio"
@@ -182,7 +182,7 @@ export function ExpenseForm({
 
       <button
         type="submit"
-        className="rounded-2xl bg-mint-dark px-4 py-3 font-semibold text-white shadow-sm"
+        className="rounded-2xl bg-mint-dark px-4 py-3 font-semibold text-white shadow-sm transition active:scale-[0.97]"
       >
         {expense ? "Save changes" : "Add expense"}
       </button>
@@ -203,7 +203,7 @@ function SplitChip({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-xl px-3 py-2 text-sm font-medium shadow-sm ring-1 transition ${
+      className={`rounded-xl px-3 py-2 text-sm font-medium shadow-sm ring-1 transition active:scale-[0.97] ${
         active
           ? "bg-blush-dark text-white ring-blush-dark"
           : "bg-white text-ink ring-black/5"

@@ -30,7 +30,7 @@ export function SettleForm({
           {users.map((u) => (
             <label
               key={u.id}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 has-checked:bg-mint has-checked:ring-mint-dark"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 transition has-checked:bg-mint has-checked:ring-mint-dark active:scale-[0.97]"
             >
               <input
                 type="radio"
@@ -69,7 +69,7 @@ export function SettleForm({
 
       <button
         type="submit"
-        className="rounded-2xl bg-blush-dark px-4 py-3 font-semibold text-white shadow-sm"
+        className="rounded-2xl bg-blush-dark px-4 py-3 font-semibold text-white shadow-sm transition active:scale-[0.97]"
       >
         Record payment
       </button>
