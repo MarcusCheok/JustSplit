@@ -6,15 +6,19 @@ export async function POST(request: NextRequest) {
   const next = String(formData.get("next") ?? "/trips");
 
   if (passcode !== process.env.APP_PASSCODE) {
-    const url = new URL("/login", request.url);
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
     url.searchParams.set("error", "1");
     url.searchParams.set("next", next);
     return NextResponse.redirect(url, { status: 303 });
   }
 
-  const response = NextResponse.redirect(new URL(next, request.url), {
-    status: 303,
-  });
+  const redirectUrl = request.nextUrl.clone();
+  redirectUrl.pathname = next;
+  redirectUrl.search = "";
+
+  const response = NextResponse.redirect(redirectUrl, { status: 303 });
   response.cookies.set("js_pass", passcode, {
     httpOnly: true,
     sameSite: "lax",
