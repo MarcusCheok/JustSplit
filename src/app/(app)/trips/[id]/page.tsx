@@ -7,6 +7,7 @@ import {
   getUsers,
 } from "@/lib/data";
 import { computeBalance } from "@/lib/balance";
+import { categoryEmoji } from "@/lib/types";
 import { closeTripAction, reopenTripAction } from "@/lib/actions";
 import { BalanceText } from "@/components/BalanceText";
 
@@ -80,9 +81,12 @@ export default async function TripDetailPage({
               key={expense.id}
               href={`/trips/${id}/expenses/${expense.id}/edit`}
               prefetch={false}
-              className="flex items-center justify-between rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5"
+              className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5"
             >
-              <div className="flex flex-col">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cream text-lg">
+                {categoryEmoji(expense.category)}
+              </span>
+              <div className="flex flex-1 flex-col">
                 <span className="font-medium">{expense.description}</span>
                 <span className="text-xs text-ink/50">
                   {payer?.emoji} {payer?.name} · {expense.expense_date}

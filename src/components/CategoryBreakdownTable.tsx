@@ -1,4 +1,4 @@
-import type { User } from "@/lib/types";
+import { categoryEmoji, type User } from "@/lib/types";
 import type { CategoryRow } from "@/lib/breakdown";
 
 export function CategoryBreakdownTable({
@@ -38,7 +38,10 @@ export function CategoryBreakdownTable({
           </tr>
           {rows.map((row) => (
             <tr key={row.label} className="border-b border-black/5 last:border-0">
-              <td className="p-3 text-ink/70">{row.label}</td>
+              <td className="p-3 text-ink/70">
+                {categoryEmoji(row.label === "Uncategorized" ? null : row.label)}{" "}
+                {row.label}
+              </td>
               {users.map((u) => (
                 <td key={u.id} className="p-3 text-right text-ink/70">
                   {row.amounts[u.id] ? `$${row.amounts[u.id].toFixed(2)}` : "–"}

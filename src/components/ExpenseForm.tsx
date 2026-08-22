@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CATEGORIES, type Expense } from "@/lib/types";
+import { CATEGORIES, CATEGORY_EMOJI, type Expense } from "@/lib/types";
 import { useCurrentUser } from "./CurrentUserProvider";
 
 type SplitMode = "equal" | "full1" | "full2" | "exact" | "percent";
@@ -73,7 +73,7 @@ export function ExpenseForm({
           <option value="">None</option>
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>
-              {c}
+              {CATEGORY_EMOJI[c]} {c}
             </option>
           ))}
         </select>

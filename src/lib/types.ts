@@ -53,4 +53,19 @@ export const CATEGORIES = [
 
 export type Category = (typeof CATEGORIES)[number];
 
+export const CATEGORY_EMOJI: Record<string, string> = {
+  Food: "🍜",
+  Transport: "🚗",
+  Accommodation: "🏨",
+  Shopping: "🛍️",
+  Fun: "🎉",
+  Other: "🔖",
+};
+
+export const UNCATEGORIZED_EMOJI = "📦";
+
+export function categoryEmoji(category: string | null): string {
+  return (category && CATEGORY_EMOJI[category]) || UNCATEGORIZED_EMOJI;
+}
+
 export type SplitMode = "equal" | "full1" | "full2" | "exact" | "percent";

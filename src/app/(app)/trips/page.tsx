@@ -19,22 +19,33 @@ export default async function TripsPage() {
 
   const open = summaries.filter((s) => s.trip.status === "open");
   const closed = summaries.filter((s) => s.trip.status === "closed");
+  const noTripsAtAll = trips.length === 0;
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/50">
-          Open
-        </h2>
-        {open.length === 0 && (
-          <p className="text-sm text-ink/50">No open trips yet.</p>
-        )}
-        {open.map(({ trip, balance }) => (
-          <TripCard key={trip.id} tripId={trip.id} name={trip.name}>
-            <BalanceText users={users} balance={balance} />
-          </TripCard>
-        ))}
-      </section>
+      {noTripsAtAll ? (
+        <div className="flex flex-col items-center gap-1 py-6 text-center">
+          <span className="text-3xl">✨</span>
+          <p className="font-semibold">Start your first JustSplit</p>
+          <p className="text-sm text-ink/50">
+            Add a trip below to start logging expenses together.
+          </p>
+        </div>
+      ) : (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/50">
+            Open
+          </h2>
+          {open.length === 0 && (
+            <p className="text-sm text-ink/50">No open trips yet.</p>
+          )}
+          {open.map(({ trip, balance }) => (
+            <TripCard key={trip.id} tripId={trip.id} name={trip.name}>
+              <BalanceText users={users} balance={balance} />
+            </TripCard>
+          ))}
+        </section>
+      )}
 
       <form
         action={createTripAction}
