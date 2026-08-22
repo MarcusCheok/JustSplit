@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fff8f4;
+  --foreground: #4a3f55;
+  --color-cream: #fff8f4;
+  --color-ink: #4a3f55;
+  --color-blush: #ffd9e8;
+  --color-blush-dark: #ff9fc2;
+  --color-lavender: #e6dcff;
+  --color-lavender-dark: #b9a3ff;
+  --color-mint: #cdf5e3;
+  --color-mint-dark: #7fd9b3;
+  --color-peach: #ffe3c2;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-cream: var(--color-cream);
+  --color-ink: var(--color-ink);
+  --color-blush: var(--color-blush);
+  --color-blush-dark: var(--color-blush-dark);
+  --color-lavender: var(--color-lavender);
+  --color-lavender-dark: var(--color-lavender-dark);
+  --color-mint: var(--color-mint);
+  --color-mint-dark: var(--color-mint-dark);
+  --color-peach: var(--color-peach);
+  --font-sans: var(--font-body);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), ui-rounded, "Nunito", sans-serif;
+}

@@ -1,0 +1,13 @@
+{
+  "name": "JustSplit",
+  "short_name": "JustSplit",
+  "description": "A cosy, ad-free way to split expenses together.",
+  "start_url": "/trips",
+  "display": "standalone",
+  "background_color": "#fff8f4",
+  "theme_color": "#ffd9e8",
+  "icons": [
+    { "src": "/icon-192", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512", "sizes": "512x512", "type": "image/png" }
+  ]
+}
