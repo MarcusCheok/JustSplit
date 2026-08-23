@@ -3,11 +3,33 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import * as db from "./data";
+import { splitEqually } from "./split";
 
 export async function createTripAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Trip name is required");
-  const trip = await db.createTrip(name);
+
+  const meId = Number(formData.get("currentUserId"));
+  const existingIds = formData.getAll("participantIds").map(Number);
+  const newNames = formData.getAll("newPersonName").map(String);
+  const newEmojis = formData.getAll("newPersonEmoji").map(String);
+
+  const createdIds: number[] = [];
+  for (let i = 0; i < newNames.length; i++) {
+    const personName = newNames[i].trim();
+    if (!personName) continue;
+    const user = await db.createUser(personName, newEmojis[i] || "🙂");
+    createdIds.push(user.id);
+  }
+
+  const participantIds = Array.from(
+    new Set([meId, ...existingIds, ...createdIds])
+  ).filter((id) => Number.isFinite(id) && id > 0);
+  if (participantIds.length < 2) {
+    throw new Error("Add at least one travel companion");
+  }
+
+  const trip = await db.createTrip(name, participantIds);
   revalidatePath("/trips");
   redirect(`/trips/${trip.id}`);
 }
@@ -26,42 +48,59 @@ export async function reopenTripAction(formData: FormData) {
   revalidatePath("/trips");
 }
 
-function parseSplits(formData: FormData, amount: number) {
+function parseSplits(
+  formData: FormData,
+  amount: number,
+  participantIds: number[]
+) {
   const mode = String(formData.get("splitMode"));
+
   if (mode === "equal") {
-    const half = Math.round((amount / 2) * 100) / 100;
-    const remainder = Math.round((amount - half) * 100) / 100;
-    return [
-      { userId: 1, amount: half },
-      { userId: 2, amount: remainder },
-    ];
+    const shares = splitEqually(amount, participantIds);
+    return participantIds.map((userId) => ({ userId, amount: shares[userId] }));
   }
-  if (mode === "full1") return [{ userId: 1, amount }];
-  if (mode === "full2") return [{ userId: 2, amount }];
+
+  if (mode === "full") {
+    const payerId = Number(formData.get("fullPayerId"));
+    if (!participantIds.includes(payerId)) {
+      throw new Error("Payer must be a trip participant");
+    }
+    return [{ userId: payerId, amount }];
+  }
+
   if (mode === "exact") {
-    const u1 = Number(formData.get("exact1"));
-    const u2 = Number(formData.get("exact2"));
-    if (Math.round((u1 + u2) * 100) !== Math.round(amount * 100)) {
+    const entries = participantIds.map((userId) => ({
+      userId,
+      amount: Number(formData.get(`exact_${userId}`)) || 0,
+    }));
+    const sum = entries.reduce((total, e) => total + e.amount, 0);
+    if (Math.round(sum * 100) !== Math.round(amount * 100)) {
       throw new Error("Exact split amounts must add up to the total");
     }
-    return [
-      { userId: 1, amount: u1 },
-      { userId: 2, amount: u2 },
-    ];
+    return entries;
   }
+
   if (mode === "percent") {
-    const p1 = Number(formData.get("percent1"));
-    const p2 = Number(formData.get("percent2"));
-    if (Math.round(p1 + p2) !== 100) {
+    const percents = participantIds.map((userId) => ({
+      userId,
+      pct: Number(formData.get(`percent_${userId}`)) || 0,
+    }));
+    const pctSum = percents.reduce((total, p) => total + p.pct, 0);
+    if (Math.round(pctSum) !== 100) {
       throw new Error("Percentages must add up to 100");
     }
-    const u1 = Math.round(((amount * p1) / 100) * 100) / 100;
-    const u2 = Math.round((amount - u1) * 100) / 100;
-    return [
-      { userId: 1, amount: u1 },
-      { userId: 2, amount: u2 },
-    ];
+    const totalCents = Math.round(amount * 100);
+    let running = 0;
+    return percents.map((p, i) => {
+      if (i === percents.length - 1) {
+        return { userId: p.userId, amount: (totalCents - running) / 100 };
+      }
+      const cents = Math.round((totalCents * p.pct) / 100);
+      running += cents;
+      return { userId: p.userId, amount: cents / 100 };
+    });
   }
+
   throw new Error("Unknown split mode");
 }
 
@@ -70,6 +109,8 @@ export async function addExpenseAction(formData: FormData) {
   const amount = Number(formData.get("amount"));
   if (!amount || amount <= 0) throw new Error("Amount must be greater than 0");
 
+  const participants = await db.getTripParticipants(tripId);
+
   await db.addExpense({
     tripId,
     description: String(formData.get("description") ?? "").trim(),
@@ -77,7 +118,7 @@ export async function addExpenseAction(formData: FormData) {
     category: (formData.get("category") as string) || null,
     paidByUserId: Number(formData.get("paidBy")),
     expenseDate: String(formData.get("date")),
-    splits: parseSplits(formData, amount),
+    splits: parseSplits(formData, amount, participants.map((p) => p.id)),
   });
 
   revalidatePath(`/trips/${tripId}`);
@@ -91,13 +132,15 @@ export async function updateExpenseAction(formData: FormData) {
   const amount = Number(formData.get("amount"));
   if (!amount || amount <= 0) throw new Error("Amount must be greater than 0");
 
+  const participants = await db.getTripParticipants(tripId);
+
   await db.updateExpense(expenseId, {
     description: String(formData.get("description") ?? "").trim(),
     amount,
     category: (formData.get("category") as string) || null,
     paidByUserId: Number(formData.get("paidBy")),
     expenseDate: String(formData.get("date")),
-    splits: parseSplits(formData, amount),
+    splits: parseSplits(formData, amount, participants.map((p) => p.id)),
   });
 
   revalidatePath(`/trips/${tripId}`);
@@ -119,10 +162,16 @@ export async function addSettlementAction(formData: FormData) {
   const amount = Number(formData.get("amount"));
   if (!amount || amount <= 0) throw new Error("Amount must be greater than 0");
 
+  const fromUserId = Number(formData.get("fromUserId"));
+  const toUserId = Number(formData.get("toUserId"));
+  if (fromUserId === toUserId) {
+    throw new Error("Payer and recipient must be different people");
+  }
+
   await db.addSettlement({
     tripId,
-    fromUserId: Number(formData.get("fromUserId")),
-    toUserId: Number(formData.get("toUserId")),
+    fromUserId,
+    toUserId,
     amount,
     note: (formData.get("note") as string) || null,
   });

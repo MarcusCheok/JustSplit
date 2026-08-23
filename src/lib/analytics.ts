@@ -2,8 +2,7 @@ import type { Trip, User } from "./types";
 
 export type TripsSnapshot = {
   tripCount: number; // F3 — excludes "General"
-  medianSpendByUser: Record<number, number>; // F4 — one value per user id, excludes "General"
-  tripsTogetherCount: number; // F5 — identical to tripCount, see PRD rationale
+  medianSpendByUser: Record<number, number>; // one value per user, over trips they took part in
 };
 
 /**
@@ -11,15 +10,23 @@ export type TripsSnapshot = {
  * Pure function, no I/O — mirrors balance.ts / breakdown.ts.
  */
 export function computeTripsSnapshot(
-  users: [User, User],
+  users: User[],
   trips: Trip[],
+  participantRows: { trip_id: string; user_id: number }[],
   expenseTotals: { trip_id: string; user_id: number; amount: number }[]
 ): TripsSnapshot {
   const countedTrips = trips.filter((t) => t.name !== "General");
 
+  const participantsByTrip = new Map<string, Set<number>>();
+  for (const row of participantRows) {
+    const set = participantsByTrip.get(row.trip_id) ?? new Set<number>();
+    set.add(row.user_id);
+    participantsByTrip.set(row.trip_id, set);
+  }
+
   // Sum each user's split share (their real cost, not who fronted the cash)
   // per trip in one pass (Map keyed by `${tripId}:${userId}`), then read one
-  // number per user per counted trip (0 if they had no share that trip).
+  // number per user per counted trip they actually took part in.
   const spendByTripAndUser = new Map<string, number>();
   for (const e of expenseTotals) {
     const key = `${e.trip_id}:${e.user_id}`;
@@ -28,17 +35,76 @@ export function computeTripsSnapshot(
 
   const medianSpendByUser: Record<number, number> = {};
   for (const user of users) {
-    const perTrip = countedTrips.map((t) =>
-      round2(spendByTripAndUser.get(`${t.id}:${user.id}`) ?? 0)
-    );
+    const perTrip = countedTrips
+      .filter((t) => participantsByTrip.get(t.id)?.has(user.id))
+      .map((t) =>
+        round2(spendByTripAndUser.get(`${t.id}:${user.id}`) ?? 0)
+      );
     medianSpendByUser[user.id] = median(perTrip);
   }
 
   return {
     tripCount: countedTrips.length,
     medianSpendByUser,
-    tripsTogetherCount: countedTrips.length, // F5 collapses into F3 — see PRD rationale
   };
+}
+
+export type TopCompanion = {
+  user: User;
+  tripCount: number;
+};
+
+/**
+ * The single person `meId` has shared the most counted trips with — not a
+ * ranked list, just the #1 (ties broken by whichever companion id sorts
+ * first among the tied leaders, for determinism).
+ */
+export function computeTopCompanion(
+  meId: number,
+  users: User[],
+  trips: Trip[],
+  participantRows: { trip_id: string; user_id: number }[]
+): TopCompanion | null {
+  const countedTripIds = new Set(
+    trips.filter((t) => t.name !== "General").map((t) => t.id)
+  );
+
+  const participantsByTrip = new Map<string, number[]>();
+  for (const row of participantRows) {
+    if (!countedTripIds.has(row.trip_id)) continue;
+    const list = participantsByTrip.get(row.trip_id) ?? [];
+    list.push(row.user_id);
+    participantsByTrip.set(row.trip_id, list);
+  }
+
+  const tripCountByCompanion = new Map<number, number>();
+  for (const participantIds of participantsByTrip.values()) {
+    if (!participantIds.includes(meId)) continue;
+    for (const userId of participantIds) {
+      if (userId === meId) continue;
+      tripCountByCompanion.set(
+        userId,
+        (tripCountByCompanion.get(userId) ?? 0) + 1
+      );
+    }
+  }
+
+  let best: { userId: number; tripCount: number } | null = null;
+  for (const [userId, tripCount] of tripCountByCompanion) {
+    if (
+      !best ||
+      tripCount > best.tripCount ||
+      (tripCount === best.tripCount && userId < best.userId)
+    ) {
+      best = { userId, tripCount };
+    }
+  }
+  if (!best) return null;
+
+  const user = users.find((u) => u.id === best!.userId);
+  if (!user) return null;
+
+  return { user, tripCount: best.tripCount };
 }
 
 function median(values: number[]): number {

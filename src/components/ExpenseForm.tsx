@@ -1,36 +1,47 @@
 "use client";
 
 import { useState } from "react";
-import { CATEGORIES, CATEGORY_EMOJI, type Expense } from "@/lib/types";
+import { CATEGORIES, CATEGORY_EMOJI, type Expense, type User } from "@/lib/types";
+import { splitEqually } from "@/lib/split";
 import { useCurrentUser } from "./CurrentUserProvider";
 
-type SplitMode = "equal" | "full1" | "full2" | "exact" | "percent";
+type SplitMode = "equal" | "full" | "exact" | "percent";
 
-function detectInitialMode(expense?: Expense): SplitMode {
+function detectInitialMode(
+  expense: Expense | undefined,
+  participantIds: number[]
+): SplitMode {
   if (!expense) return "equal";
-  const [s1, s2] = expense.splits;
-  if (expense.splits.length === 1) {
-    return expense.splits[0].user_id === 1 ? "full1" : "full2";
-  }
-  if (s1 && s2 && Math.abs(s1.amount - s2.amount) < 0.01) return "equal";
-  return "exact";
+  if (expense.splits.length === 1) return "full";
+  const shares = splitEqually(expense.amount, participantIds);
+  const isEqual =
+    expense.splits.length === participantIds.length &&
+    expense.splits.every((s) => Math.abs(s.amount - (shares[s.user_id] ?? NaN)) < 0.01);
+  return isEqual ? "equal" : "exact";
 }
 
 export function ExpenseForm({
   action,
   tripId,
+  participants,
   expense,
 }: {
   action: (formData: FormData) => void;
   tripId: string;
+  participants: User[];
   expense?: Expense;
 }) {
-  const { users, currentUser } = useCurrentUser();
+  const { currentUser } = useCurrentUser();
+  const participantIds = participants.map((p) => p.id);
   const [amount, setAmount] = useState(expense?.amount ?? 0);
-  const [mode, setMode] = useState<SplitMode>(detectInitialMode(expense));
+  const [mode, setMode] = useState<SplitMode>(detectInitialMode(expense, participantIds));
+  const [fullPayerId, setFullPayerId] = useState(
+    expense && expense.splits.length === 1
+      ? expense.splits[0].user_id
+      : currentUser?.id ?? participants[0]?.id
+  );
 
-  const half = Math.round((amount / 2) * 100) / 100;
-  const other = Math.round((amount - half) * 100) / 100;
+  const equalShares = splitEqually(amount, participantIds);
 
   const splitFor = (userId: number) =>
     expense?.splits.find((s) => s.user_id === userId)?.amount ?? 0;
@@ -81,8 +92,8 @@ export function ExpenseForm({
 
       <label className="flex flex-col gap-1">
         <span className="text-sm font-medium text-ink/70">Paid by</span>
-        <div className="flex gap-2">
-          {users.map((u) => (
+        <div className="flex flex-wrap gap-2">
+          {participants.map((u) => (
             <label
               key={u.id}
               className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 transition has-checked:bg-mint has-checked:ring-mint-dark active:scale-[0.97]"
@@ -117,17 +128,15 @@ export function ExpenseForm({
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium text-ink/70">Split</span>
         <input type="hidden" name="splitMode" value={mode} />
+        {mode === "full" && (
+          <input type="hidden" name="fullPayerId" value={fullPayerId} />
+        )}
         <div className="grid grid-cols-2 gap-2">
-          <SplitChip label="50 / 50" active={mode === "equal"} onClick={() => setMode("equal")} />
+          <SplitChip label="Split equally" active={mode === "equal"} onClick={() => setMode("equal")} />
           <SplitChip
-            label={`100% ${users[0].name}`}
-            active={mode === "full1"}
-            onClick={() => setMode("full1")}
-          />
-          <SplitChip
-            label={`100% ${users[1].name}`}
-            active={mode === "full2"}
-            onClick={() => setMode("full2")}
+            label="One person pays it all"
+            active={mode === "full"}
+            onClick={() => setMode("full")}
           />
           <SplitChip label="Exact amounts" active={mode === "exact"} onClick={() => setMode("exact")} />
           <SplitChip label="Percentage" active={mode === "percent"} onClick={() => setMode("percent")} />
@@ -135,47 +144,54 @@ export function ExpenseForm({
 
         {mode === "equal" && (
           <p className="text-sm text-ink/50">
-            {users[0].name} ${half.toFixed(2)} · {users[1].name} ${other.toFixed(2)}
+            {participants
+              .map((u) => `${u.name} $${(equalShares[u.id] ?? 0).toFixed(2)}`)
+              .join(" · ")}
           </p>
         )}
 
+        {mode === "full" && (
+          <select
+            value={fullPayerId}
+            onChange={(e) => setFullPayerId(Number(e.target.value))}
+            className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5"
+          >
+            {participants.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.emoji} {u.name} covers it all
+              </option>
+            ))}
+          </select>
+        )}
+
         {mode === "exact" && (
-          <div className="flex gap-2">
-            <input
-              name="exact1"
-              type="number"
-              step="0.01"
-              placeholder={`${users[0].name}'s share`}
-              defaultValue={expense ? splitFor(users[0].id) : undefined}
-              className="w-full rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5"
-            />
-            <input
-              name="exact2"
-              type="number"
-              step="0.01"
-              placeholder={`${users[1].name}'s share`}
-              defaultValue={expense ? splitFor(users[1].id) : undefined}
-              className="w-full rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5"
-            />
+          <div className="flex flex-col gap-2">
+            {participants.map((u) => (
+              <input
+                key={u.id}
+                name={`exact_${u.id}`}
+                type="number"
+                step="0.01"
+                placeholder={`${u.name}'s share`}
+                defaultValue={expense ? splitFor(u.id) : undefined}
+                className="w-full rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5"
+              />
+            ))}
           </div>
         )}
 
         {mode === "percent" && (
-          <div className="flex gap-2">
-            <input
-              name="percent1"
-              type="number"
-              placeholder={`${users[0].name} %`}
-              defaultValue={50}
-              className="w-full rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5"
-            />
-            <input
-              name="percent2"
-              type="number"
-              placeholder={`${users[1].name} %`}
-              defaultValue={50}
-              className="w-full rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5"
-            />
+          <div className="flex flex-col gap-2">
+            {participants.map((u) => (
+              <input
+                key={u.id}
+                name={`percent_${u.id}`}
+                type="number"
+                placeholder={`${u.name} %`}
+                defaultValue={Math.round(100 / participants.length)}
+                className="w-full rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5"
+              />
+            ))}
           </div>
         )}
       </div>

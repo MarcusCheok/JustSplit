@@ -1,37 +1,78 @@
 import type { Expense, Settlement, User } from "./types";
 
+export type Transaction = {
+  fromUserId: number;
+  toUserId: number;
+  amount: number;
+};
+
+export type GroupBalance = {
+  /** Net position per participant: positive = owed to them, negative = they owe. */
+  net: Record<number, number>;
+  /** Simplified minimum set of payments that would settle every debt. */
+  transactions: Transaction[];
+};
+
 /**
- * Net balance per user: positive means the OTHER person owes them.
- * Only meaningful for exactly two users (JustSplit's fixed scope).
+ * Computes each trip participant's net balance from expenses + settlements,
+ * then simplifies the group's debts into a minimal set of payments (greedily
+ * matching the biggest debtor to the biggest creditor, repeatedly) — the
+ * standard "splitwise" debt-simplification approach, generalized from pairs
+ * to any number of participants.
  */
-export function computeBalance(
-  users: [User, User],
+export function computeGroupBalance(
+  participants: User[],
   expenses: Expense[],
   settlements: Settlement[]
-): { net: number; owedByUserId: number | null; owedToUserId: number | null } {
-  const [a, b] = users;
-  let net = 0; // positive => b owes a, negative => a owes b
+): GroupBalance {
+  const net: Record<number, number> = {};
+  for (const p of participants) net[p.id] = 0;
 
   for (const expense of expenses) {
-    // Whoever paid is owed the other person's share of that expense.
-    const paidByA = expense.paid_by_user_id === a.id;
-    const otherShare =
-      expense.splits.find((s) => s.user_id === (paidByA ? b.id : a.id))
-        ?.amount ?? 0;
-    net += paidByA ? otherShare : -otherShare;
+    net[expense.paid_by_user_id] =
+      (net[expense.paid_by_user_id] ?? 0) + expense.amount;
+    for (const split of expense.splits) {
+      net[split.user_id] = (net[split.user_id] ?? 0) - split.amount;
+    }
   }
 
   for (const s of settlements) {
-    // b paying a shrinks what b owes a; a paying b shrinks a's debt (net grows).
-    if (s.from_user_id === b.id && s.to_user_id === a.id) net -= s.amount;
-    if (s.from_user_id === a.id && s.to_user_id === b.id) net += s.amount;
+    net[s.from_user_id] = (net[s.from_user_id] ?? 0) + s.amount;
+    net[s.to_user_id] = (net[s.to_user_id] ?? 0) - s.amount;
   }
 
-  net = Math.round(net * 100) / 100;
+  for (const id in net) net[id] = round2(net[id]);
 
-  return {
-    net,
-    owedByUserId: net > 0 ? b.id : net < 0 ? a.id : null,
-    owedToUserId: net > 0 ? a.id : net < 0 ? b.id : null,
-  };
+  const creditors = Object.entries(net)
+    .filter(([, amount]) => amount > 0.004)
+    .map(([id, amount]) => ({ id: Number(id), amount }))
+    .sort((a, b) => b.amount - a.amount);
+  const debtors = Object.entries(net)
+    .filter(([, amount]) => amount < -0.004)
+    .map(([id, amount]) => ({ id: Number(id), amount: -amount }))
+    .sort((a, b) => b.amount - a.amount);
+
+  const transactions: Transaction[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < debtors.length && j < creditors.length) {
+    const amount = round2(Math.min(debtors[i].amount, creditors[j].amount));
+    if (amount > 0) {
+      transactions.push({
+        fromUserId: debtors[i].id,
+        toUserId: creditors[j].id,
+        amount,
+      });
+    }
+    debtors[i].amount = round2(debtors[i].amount - amount);
+    creditors[j].amount = round2(creditors[j].amount - amount);
+    if (debtors[i].amount <= 0.004) i++;
+    if (creditors[j].amount <= 0.004) j++;
+  }
+
+  return { net, transactions };
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
 }

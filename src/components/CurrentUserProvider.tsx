@@ -12,7 +12,7 @@ import type { User } from "@/lib/types";
 const STORAGE_KEY = "js_user_id";
 
 type Ctx = {
-  users: [User, User];
+  users: User[];
   currentUser: User | null;
   setCurrentUser: (id: number) => void;
 };
@@ -29,7 +29,7 @@ export function CurrentUserProvider({
   users,
   children,
 }: {
-  users: [User, User];
+  users: User[];
   children: ReactNode;
 }) {
   const [currentUser, setCurrentUserState] = useState<User | null>(null);
@@ -54,7 +54,7 @@ export function CurrentUserProvider({
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-6 p-6 text-center">
         <p className="text-lg font-semibold">Who&apos;s this? 🥰</p>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap justify-center gap-4">
           {users.map((u) => (
             <button
               key={u.id}

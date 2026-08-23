@@ -2,48 +2,59 @@
 
 import { useState } from "react";
 import type { User } from "@/lib/types";
+import type { GroupBalance } from "@/lib/balance";
 
 export function SettleForm({
   action,
   tripId,
-  users,
+  participants,
   balance,
 }: {
   action: (formData: FormData) => void;
   tripId: string;
-  users: [User, User];
-  balance: { net: number; owedByUserId: number | null; owedToUserId: number | null };
+  participants: User[];
+  balance: GroupBalance;
 }) {
-  const suggestedFrom = balance.owedByUserId ?? users[0].id;
-  const suggestedTo = balance.owedToUserId ?? users[1].id;
-  const [from, setFrom] = useState(suggestedFrom);
-
-  const to = users.find((u) => u.id !== from)?.id ?? suggestedTo;
+  const suggested = balance.transactions[0];
+  const [from, setFrom] = useState(suggested?.fromUserId ?? participants[0]?.id);
+  const [to, setTo] = useState(
+    suggested?.toUserId ?? participants[1]?.id ?? participants[0]?.id
+  );
 
   return (
     <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name="tripId" value={tripId} />
-      <input type="hidden" name="toUserId" value={to} />
+
       <label className="flex flex-col gap-1">
         <span className="text-sm font-medium text-ink/70">Who paid?</span>
-        <div className="flex gap-2">
-          {users.map((u) => (
-            <label
-              key={u.id}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 transition has-checked:bg-mint has-checked:ring-mint-dark active:scale-[0.97]"
-            >
-              <input
-                type="radio"
-                name="fromUserId"
-                value={u.id}
-                checked={from === u.id}
-                onChange={() => setFrom(u.id)}
-                className="sr-only"
-              />
+        <select
+          name="fromUserId"
+          value={from}
+          onChange={(e) => setFrom(Number(e.target.value))}
+          className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-blush-dark"
+        >
+          {participants.map((u) => (
+            <option key={u.id} value={u.id}>
               {u.emoji} {u.name}
-            </label>
+            </option>
           ))}
-        </div>
+        </select>
+      </label>
+
+      <label className="flex flex-col gap-1">
+        <span className="text-sm font-medium text-ink/70">Who received it?</span>
+        <select
+          name="toUserId"
+          value={to}
+          onChange={(e) => setTo(Number(e.target.value))}
+          className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-blush-dark"
+        >
+          {participants.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.emoji} {u.name}
+            </option>
+          ))}
+        </select>
       </label>
 
       <label className="flex flex-col gap-1">
@@ -54,7 +65,7 @@ export function SettleForm({
           step="0.01"
           min="0.01"
           required
-          defaultValue={Math.abs(balance.net) || undefined}
+          defaultValue={suggested?.amount}
           className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-blush-dark"
         />
       </label>

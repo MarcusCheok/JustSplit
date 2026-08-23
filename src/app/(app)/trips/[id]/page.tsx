@@ -4,12 +4,12 @@ import {
   getTrip,
   getTripExpenses,
   getTripSettlements,
-  getUsers,
+  getTripParticipants,
 } from "@/lib/data";
-import { computeBalance } from "@/lib/balance";
+import { computeGroupBalance } from "@/lib/balance";
 import { categoryEmoji } from "@/lib/types";
 import { closeTripAction, reopenTripAction } from "@/lib/actions";
-import { BalanceText } from "@/components/BalanceText";
+import { BalanceSummary } from "@/components/BalanceSummary";
 
 export default async function TripDetailPage({
   params,
@@ -20,13 +20,13 @@ export default async function TripDetailPage({
   const trip = await getTrip(id);
   if (!trip) notFound();
 
-  const [users, expenses, settlements] = await Promise.all([
-    getUsers(),
+  const [participants, expenses, settlements] = await Promise.all([
+    getTripParticipants(id),
     getTripExpenses(id),
     getTripSettlements(id),
   ]);
-  const balance = computeBalance(users, expenses, settlements);
-  const userById = (userId: number) => users.find((u) => u.id === userId);
+  const balance = computeGroupBalance(participants, expenses, settlements);
+  const userById = (userId: number) => participants.find((u) => u.id === userId);
 
   return (
     <div className="flex flex-col gap-5">
@@ -35,10 +35,13 @@ export default async function TripDetailPage({
           ← Trips
         </Link>
         <h1 className="text-xl font-bold">{trip.name}</h1>
+        <p className="text-xs text-ink/40">
+          {participants.map((p) => `${p.emoji} ${p.name}`).join(" · ")}
+        </p>
       </div>
 
       <div className="rounded-2xl bg-lavender p-4 text-center font-medium">
-        <BalanceText users={users} balance={balance} />
+        <BalanceSummary participants={participants} balance={balance} />
       </div>
 
       {trip.status === "open" ? (
