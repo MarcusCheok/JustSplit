@@ -47,9 +47,19 @@ export async function createTripAction(formData: FormData) {
     throw new Error("Add at least one travel companion");
   }
 
-  const trip = await db.createTrip(name, participantIds);
+  const country = String(formData.get("country") ?? "").trim() || null;
+
+  const trip = await db.createTrip(name, participantIds, country);
   revalidatePath("/trips");
   redirect(`/trips/${trip.id}`);
+}
+
+export async function updateTripCountryAction(formData: FormData) {
+  const tripId = String(formData.get("tripId"));
+  const country = String(formData.get("country") ?? "").trim() || null;
+  await db.updateTripCountry(tripId, country);
+  revalidatePath(`/trips/${tripId}`);
+  revalidatePath("/trips/countries");
 }
 
 export async function closeTripAction(formData: FormData) {

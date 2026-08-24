@@ -5,14 +5,20 @@ import {
   getTripSettlements,
   getUsers,
   getTripParticipants,
+  getAllTripParticipants,
 } from "@/lib/data";
 import { computeGroupBalance } from "@/lib/balance";
 import { createTripAction } from "@/lib/actions";
 import { BalanceSummary } from "@/components/BalanceSummary";
 import { TripForm } from "@/components/TripForm";
+import { CapybaraPet } from "@/components/CapybaraPet";
 
 export default async function TripsPage() {
-  const [trips, users] = await Promise.all([getTrips(), getUsers()]);
+  const [trips, users, allParticipantRows] = await Promise.all([
+    getTrips(),
+    getUsers(),
+    getAllTripParticipants(),
+  ]);
 
   const summaries = await Promise.all(
     trips.map(async (trip) => {
@@ -35,13 +41,24 @@ export default async function TripsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Link
-        href="/trips/history"
-        prefetch={false}
-        className="flex items-center justify-center gap-2 rounded-2xl bg-lavender p-4 text-center font-medium shadow-sm ring-1 ring-black/5 transition hover:shadow-md active:scale-[0.97]"
-      >
-        🕰️ Trip History &amp; Stats
-      </Link>
+      <CapybaraPet trips={trips} participantRows={allParticipantRows} />
+
+      <div className="grid grid-cols-2 gap-2">
+        <Link
+          href="/trips/history"
+          prefetch={false}
+          className="flex items-center justify-center gap-2 rounded-2xl bg-lavender p-4 text-center font-medium shadow-sm ring-1 ring-black/5 transition hover:shadow-md active:scale-[0.97]"
+        >
+          🕰️ Trip History &amp; Stats
+        </Link>
+        <Link
+          href="/trips/countries"
+          prefetch={false}
+          className="flex items-center justify-center gap-2 rounded-2xl bg-lavender p-4 text-center font-medium shadow-sm ring-1 ring-black/5 transition hover:shadow-md active:scale-[0.97]"
+        >
+          🌍 Countries Visited
+        </Link>
+      </div>
 
       {noTripsAtAll ? (
         <div className="flex flex-col items-center gap-1 py-6 text-center">

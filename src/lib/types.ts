@@ -11,6 +11,7 @@ export type Trip = {
   id: string;
   name: string;
   status: TripStatus;
+  country: string | null;
   created_at: string;
   closed_at: string | null;
 };

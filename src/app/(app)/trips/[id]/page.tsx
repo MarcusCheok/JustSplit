@@ -9,8 +9,9 @@ import {
 import { computeGroupBalance } from "@/lib/balance";
 import { toSgd } from "@/lib/currency";
 import { categoryEmoji, CURRENCY_SYMBOL } from "@/lib/types";
-import { closeTripAction, reopenTripAction } from "@/lib/actions";
+import { closeTripAction, reopenTripAction, updateTripCountryAction } from "@/lib/actions";
 import { BalanceSummary } from "@/components/BalanceSummary";
+import { COUNTRIES } from "@/lib/countries";
 
 export default async function TripDetailPage({
   params,
@@ -39,6 +40,28 @@ export default async function TripDetailPage({
         <p className="text-xs text-ink/40">
           {participants.map((p) => `${p.emoji} ${p.name}`).join(" · ")}
         </p>
+        <form action={updateTripCountryAction} className="mt-1 flex items-center gap-1.5">
+          <input type="hidden" name="tripId" value={id} />
+          <span className="text-xs text-ink/40">🌍</span>
+          <input
+            name="country"
+            list="country-options"
+            defaultValue={trip.country ?? ""}
+            placeholder="Add country"
+            className="rounded-lg bg-white px-2 py-1 text-xs text-ink/70 shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-blush-dark"
+          />
+          <datalist id="country-options">
+            {COUNTRIES.map((c) => (
+              <option key={c} value={c} />
+            ))}
+          </datalist>
+          <button
+            type="submit"
+            className="rounded-lg bg-white px-2 py-1 text-xs font-medium text-ink/50 shadow-sm ring-1 ring-black/5 transition active:scale-[0.97]"
+          >
+            Save
+          </button>
+        </form>
       </div>
 
       <div className="rounded-2xl bg-lavender p-4 text-center font-medium">
