@@ -8,6 +8,7 @@ import {
 } from "@/lib/data";
 import { computeGroupBalance } from "@/lib/balance";
 import { toSgd } from "@/lib/currency";
+import { groupExpensesByDay } from "@/lib/expenseDays";
 import { categoryEmoji, CURRENCY_SYMBOL } from "@/lib/types";
 import {
   closeTripAction,
@@ -136,51 +137,61 @@ export default async function TripDetailPage({
         </form>
       )}
 
-      <section className="flex flex-col gap-2">
+      <section className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/50">
           Expenses
         </h2>
         {expenses.length === 0 && (
           <p className="text-sm text-ink/50">No expenses logged yet.</p>
         )}
-        {expenses.map((expense) => {
-          const payer = userById(expense.paid_by_user_id);
-          return (
-            <Link
-              key={expense.id}
-              href={`/trips/${id}/expenses/${expense.id}/edit`}
-              prefetch={false}
-              className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5 transition active:scale-[0.97]"
-            >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cream text-lg">
-                {categoryEmoji(expense.category)}
+        {groupExpensesByDay(expenses, trip.exchange_rate_to_sgd).map((day) => (
+          <div key={day.date} className="flex flex-col gap-2">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-semibold text-ink/50">
+                {formatDayHeader(day.date)}
               </span>
-              <div className="flex flex-1 flex-col">
-                <span className="font-medium">{expense.description}</span>
-                <span className="text-xs text-ink/50">
-                  {payer?.emoji} {payer?.name} · {expense.expense_date}
-                  {expense.category ? ` · ${expense.category}` : ""}
-                </span>
-              </div>
-              <div className="flex flex-col items-end">
-                <span className="font-semibold">
-                  {CURRENCY_SYMBOL[expense.currency]}
-                  {expense.amount.toFixed(2)}
-                </span>
-                {expense.currency !== "SGD" && (
-                  <span className="text-xs text-ink/40">
-                    ≈ S$
-                    {toSgd(
-                      expense.amount,
-                      expense.currency,
-                      trip.exchange_rate_to_sgd
-                    ).toFixed(2)}
+              <span className="text-xs text-ink/40">S${day.totalSgd.toFixed(2)}</span>
+            </div>
+            {day.expenses.map((expense) => {
+              const payer = userById(expense.paid_by_user_id);
+              return (
+                <Link
+                  key={expense.id}
+                  href={`/trips/${id}/expenses/${expense.id}/edit`}
+                  prefetch={false}
+                  className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5 transition active:scale-[0.97]"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cream text-lg">
+                    {categoryEmoji(expense.category)}
                   </span>
-                )}
-              </div>
-            </Link>
-          );
-        })}
+                  <div className="flex flex-1 flex-col">
+                    <span className="font-medium">{expense.description}</span>
+                    <span className="text-xs text-ink/50">
+                      {payer?.emoji} {payer?.name}
+                      {expense.category ? ` · ${expense.category}` : ""}
+                    </span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="font-semibold">
+                      {CURRENCY_SYMBOL[expense.currency]}
+                      {expense.amount.toFixed(2)}
+                    </span>
+                    {expense.currency !== "SGD" && (
+                      <span className="text-xs text-ink/40">
+                        ≈ S$
+                        {toSgd(
+                          expense.amount,
+                          expense.currency,
+                          trip.exchange_rate_to_sgd
+                        ).toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </section>
 
       {settlements.length > 0 && (
@@ -217,4 +228,12 @@ export default async function TripDetailPage({
       )}
     </div>
   );
+}
+
+function formatDayHeader(dateStr: string): string {
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString("en-SG", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
 }
