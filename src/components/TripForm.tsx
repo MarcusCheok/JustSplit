@@ -63,6 +63,15 @@ export function TripForm({
         ))}
       </datalist>
 
+      <input
+        name="sgdToAud"
+        type="number"
+        step="0.0001"
+        min="0.0001"
+        placeholder="1 SGD = ? AUD (optional, for AUD expenses)"
+        className="rounded-xl bg-cream px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blush-dark"
+      />
+
       {others.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-medium text-ink/50">Who&apos;s coming?</span>

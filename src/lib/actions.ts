@@ -6,21 +6,27 @@ import * as db from "./data";
 import { splitEqually } from "./split";
 import { CURRENCIES, type Currency } from "./types";
 
-function parseCurrency(formData: FormData): {
-  currency: Currency;
-  exchangeRateToSgd: number;
-} {
+function parseCurrency(formData: FormData): Currency {
   const currency = String(formData.get("currency") ?? "SGD");
   if (!CURRENCIES.includes(currency as Currency)) {
     throw new Error("Unknown currency");
   }
-  if (currency === "SGD") return { currency: "SGD", exchangeRateToSgd: 1 };
+  return currency as Currency;
+}
 
-  const exchangeRateToSgd = Number(formData.get("exchangeRate"));
-  if (!exchangeRateToSgd || exchangeRateToSgd <= 0) {
-    throw new Error("Enter a valid AUD → SGD exchange rate");
+/**
+ * Exchange rate is set once per trip (not per expense). Users think of it as
+ * "1 SGD = ? AUD", so that's what the form asks for; internally we still
+ * store/consume SGD-per-AUD (see currency.ts's toSgd), so it's inverted here.
+ */
+function parseTripExchangeRate(formData: FormData): number {
+  const raw = String(formData.get("sgdToAud") ?? "").trim();
+  if (!raw) return 1;
+  const sgdToAud = Number(raw);
+  if (!sgdToAud || sgdToAud <= 0) {
+    throw new Error("Enter a valid SGD → AUD exchange rate");
   }
-  return { currency: "AUD", exchangeRateToSgd };
+  return Math.round((1 / sgdToAud) * 1e6) / 1e6;
 }
 
 export async function createTripAction(formData: FormData) {
@@ -48,8 +54,9 @@ export async function createTripAction(formData: FormData) {
   }
 
   const country = String(formData.get("country") ?? "").trim() || null;
+  const exchangeRateToSgd = parseTripExchangeRate(formData);
 
-  const trip = await db.createTrip(name, participantIds, country);
+  const trip = await db.createTrip(name, participantIds, country, exchangeRateToSgd);
   revalidatePath("/trips");
   redirect(`/trips/${trip.id}`);
 }
@@ -60,6 +67,13 @@ export async function updateTripCountryAction(formData: FormData) {
   await db.updateTripCountry(tripId, country);
   revalidatePath(`/trips/${tripId}`);
   revalidatePath("/trips/countries");
+}
+
+export async function updateTripExchangeRateAction(formData: FormData) {
+  const tripId = String(formData.get("tripId"));
+  const exchangeRateToSgd = parseTripExchangeRate(formData);
+  await db.updateTripExchangeRate(tripId, exchangeRateToSgd);
+  revalidatePath(`/trips/${tripId}`);
 }
 
 export async function closeTripAction(formData: FormData) {
@@ -138,14 +152,13 @@ export async function addExpenseAction(formData: FormData) {
   if (!amount || amount <= 0) throw new Error("Amount must be greater than 0");
 
   const participants = await db.getTripParticipants(tripId);
-  const { currency, exchangeRateToSgd } = parseCurrency(formData);
+  const currency = parseCurrency(formData);
 
   await db.addExpense({
     tripId,
     description: String(formData.get("description") ?? "").trim(),
     amount,
     currency,
-    exchangeRateToSgd,
     category: (formData.get("category") as string) || null,
     paidByUserId: Number(formData.get("paidBy")),
     expenseDate: String(formData.get("date")),
@@ -164,13 +177,12 @@ export async function updateExpenseAction(formData: FormData) {
   if (!amount || amount <= 0) throw new Error("Amount must be greater than 0");
 
   const participants = await db.getTripParticipants(tripId);
-  const { currency, exchangeRateToSgd } = parseCurrency(formData);
+  const currency = parseCurrency(formData);
 
   await db.updateExpense(expenseId, {
     description: String(formData.get("description") ?? "").trim(),
     amount,
     currency,
-    exchangeRateToSgd,
     category: (formData.get("category") as string) || null,
     paidByUserId: Number(formData.get("paidBy")),
     expenseDate: String(formData.get("date")),

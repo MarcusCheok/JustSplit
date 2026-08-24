@@ -8,12 +8,13 @@ export type CategoryRow = {
 
 /**
  * How much each person paid, broken down by expense category. Amounts are
- * converted to SGD (the tabulation currency) regardless of what currency
- * each expense was originally entered in.
+ * converted to SGD (the tabulation currency) using the trip's exchange rate,
+ * regardless of what currency each expense was originally entered in.
  */
 export function computeCategoryBreakdown(
   users: User[],
-  expenses: Expense[]
+  expenses: Expense[],
+  exchangeRateToSgd: number
 ): { rows: CategoryRow[]; totals: Record<number, number> } {
   const emptyRow = () =>
     Object.fromEntries(users.map((u) => [u.id, 0])) as Record<number, number>;
@@ -22,7 +23,7 @@ export function computeCategoryBreakdown(
   const totals = emptyRow();
 
   for (const expense of expenses) {
-    const amountSgd = toSgd(expense.amount, expense.currency, expense.exchange_rate_to_sgd);
+    const amountSgd = toSgd(expense.amount, expense.currency, exchangeRateToSgd);
     const label = expense.category ?? "Uncategorized";
     const row = byCategory.get(label) ?? emptyRow();
     row[expense.paid_by_user_id] = (row[expense.paid_by_user_id] ?? 0) + amountSgd;

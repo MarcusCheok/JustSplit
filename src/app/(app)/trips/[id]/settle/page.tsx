@@ -27,8 +27,17 @@ export default async function SettlePage({
     getTripExpenses(id),
     getTripSettlements(id),
   ]);
-  const balance = computeGroupBalance(participants, expenses, settlements);
-  const { rows, totals } = computeCategoryBreakdown(participants, expenses);
+  const balance = computeGroupBalance(
+    participants,
+    expenses,
+    settlements,
+    trip.exchange_rate_to_sgd
+  );
+  const { rows, totals } = computeCategoryBreakdown(
+    participants,
+    expenses,
+    trip.exchange_rate_to_sgd
+  );
 
   return (
     <div className="flex flex-col gap-5">

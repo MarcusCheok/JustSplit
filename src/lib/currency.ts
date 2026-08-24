@@ -1,10 +1,9 @@
 import type { Currency } from "./types";
 
 /**
- * Converts an amount in `currency` to SGD using the rate locked in at the
- * time the expense was entered. SGD is the tabulation currency for now — all
- * balances, settlements, and stats are computed in SGD, only the raw
- * per-expense amount can be AUD.
+ * Converts an amount in `currency` to SGD using the given trip's exchange
+ * rate. SGD is the tabulation currency for now — all balances, settlements,
+ * and stats are computed in SGD, only the raw per-expense amount can be AUD.
  */
 export function toSgd(
   amount: number,

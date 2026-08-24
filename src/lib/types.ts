@@ -12,6 +12,8 @@ export type Trip = {
   name: string;
   status: TripStatus;
   country: string | null;
+  /** SGD value of 1 AUD, applied to every AUD expense in this trip. */
+  exchange_rate_to_sgd: number;
   created_at: string;
   closed_at: string | null;
 };
@@ -36,7 +38,6 @@ export type Expense = {
   description: string;
   amount: number;
   currency: Currency;
-  exchange_rate_to_sgd: number;
   category: string | null;
   paid_by_user_id: number;
   expense_date: string;

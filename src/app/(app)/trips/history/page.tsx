@@ -132,7 +132,12 @@ async function TripListSection({ trips }: { trips: Trip[] }) {
         return {
           trip,
           participants,
-          balance: computeGroupBalance(participants, expenses, settlements),
+          balance: computeGroupBalance(
+            participants,
+            expenses,
+            settlements,
+            trip.exchange_rate_to_sgd
+          ),
         };
       })
     );

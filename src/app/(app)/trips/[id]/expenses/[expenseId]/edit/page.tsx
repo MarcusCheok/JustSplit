@@ -30,6 +30,7 @@ export default async function EditExpensePage({
         tripId={expense.trip_id}
         participants={participants}
         expense={expense}
+        tripExchangeRate={trip.exchange_rate_to_sgd}
       />
       <form action={deleteExpenseAction}>
         <input type="hidden" name="tripId" value={expense.trip_id} />
