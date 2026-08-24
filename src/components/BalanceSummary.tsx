@@ -26,7 +26,7 @@ export function BalanceSummary({
     return (
       <>
         {from?.emoji} {from?.name} owes {to?.emoji} {to?.name}{" "}
-        <span className="font-semibold text-ink">${first.amount.toFixed(2)}</span>
+        <span className="font-semibold text-ink">S${first.amount.toFixed(2)}</span>
         {rest.length > 0 ? ` · +${rest.length} more` : ""}
       </>
     );
@@ -40,7 +40,7 @@ export function BalanceSummary({
         return (
           <p key={i}>
             {from?.emoji} {from?.name} owes {to?.emoji} {to?.name}{" "}
-            <span className="font-semibold text-ink">${t.amount.toFixed(2)}</span>
+            <span className="font-semibold text-ink">S${t.amount.toFixed(2)}</span>
           </p>
         );
       })}

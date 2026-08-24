@@ -20,11 +20,22 @@ export type ExpenseSplit = {
   amount: number;
 };
 
+export const CURRENCIES = ["SGD", "AUD"] as const;
+
+export type Currency = (typeof CURRENCIES)[number];
+
+export const CURRENCY_SYMBOL: Record<Currency, string> = {
+  SGD: "S$",
+  AUD: "A$",
+};
+
 export type Expense = {
   id: string;
   trip_id: string;
   description: string;
   amount: number;
+  currency: Currency;
+  exchange_rate_to_sgd: number;
   category: string | null;
   paid_by_user_id: number;
   expense_date: string;
@@ -67,5 +78,3 @@ export const UNCATEGORIZED_EMOJI = "📦";
 export function categoryEmoji(category: string | null): string {
   return (category && CATEGORY_EMOJI[category]) || UNCATEGORIZED_EMOJI;
 }
-
-export type SplitMode = "equal" | "full1" | "full2" | "exact" | "percent";

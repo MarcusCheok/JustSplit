@@ -1,6 +1,7 @@
 import "server-only";
 import { supabase } from "./supabase";
-import type { Expense, Settlement, Trip, User } from "./types";
+import { toSgd } from "./currency";
+import type { Currency, Expense, Settlement, Trip, User } from "./types";
 
 export async function getUsers(): Promise<User[]> {
   const { data, error } = await supabase.from("users").select("*").order("id");
@@ -114,20 +115,26 @@ export async function getAllExpenseSplitTotals(): Promise<
 > {
   const { data, error } = await supabase
     .from("expense_splits")
-    .select("user_id, amount, expenses(trip_id)");
+    .select("user_id, amount, expenses(trip_id, currency, exchange_rate_to_sgd)");
   if (error) throw error;
   return (
     (data ?? []) as unknown as {
       user_id: number;
       amount: number;
-      expenses: { trip_id: string } | null;
+      expenses: {
+        trip_id: string;
+        currency: Currency;
+        exchange_rate_to_sgd: number;
+      } | null;
     }[]
   )
     .filter((row) => row.expenses)
     .map((row) => ({
       trip_id: row.expenses!.trip_id,
       user_id: row.user_id,
-      amount: row.amount,
+      // Normalized to SGD, the tabulation currency — analytics.ts consumes
+      // these as plain comparable numbers, unaware of per-expense currency.
+      amount: toSgd(row.amount, row.expenses!.currency, row.expenses!.exchange_rate_to_sgd),
     }));
 }
 
@@ -145,6 +152,8 @@ export async function addExpense(input: {
   tripId: string;
   description: string;
   amount: number;
+  currency: Currency;
+  exchangeRateToSgd: number;
   category: string | null;
   paidByUserId: number;
   expenseDate: string;
@@ -156,6 +165,8 @@ export async function addExpense(input: {
       trip_id: input.tripId,
       description: input.description,
       amount: input.amount,
+      currency: input.currency,
+      exchange_rate_to_sgd: input.exchangeRateToSgd,
       category: input.category,
       paid_by_user_id: input.paidByUserId,
       expense_date: input.expenseDate,
@@ -179,6 +190,8 @@ export async function updateExpense(
   input: {
     description: string;
     amount: number;
+    currency: Currency;
+    exchangeRateToSgd: number;
     category: string | null;
     paidByUserId: number;
     expenseDate: string;
@@ -190,6 +203,8 @@ export async function updateExpense(
     .update({
       description: input.description,
       amount: input.amount,
+      currency: input.currency,
+      exchange_rate_to_sgd: input.exchangeRateToSgd,
       category: input.category,
       paid_by_user_id: input.paidByUserId,
       expense_date: input.expenseDate,

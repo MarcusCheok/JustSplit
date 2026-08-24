@@ -1,3 +1,4 @@
+import { toSgd } from "./currency";
 import type { Expense, Settlement, User } from "./types";
 
 export type Transaction = {
@@ -19,6 +20,9 @@ export type GroupBalance = {
  * matching the biggest debtor to the biggest creditor, repeatedly) — the
  * standard "splitwise" debt-simplification approach, generalized from pairs
  * to any number of participants.
+ *
+ * Expenses may be entered in AUD or SGD; every amount is converted to SGD
+ * (the tabulation currency) before netting. Settlements are SGD-only.
  */
 export function computeGroupBalance(
   participants: User[],
@@ -29,10 +33,11 @@ export function computeGroupBalance(
   for (const p of participants) net[p.id] = 0;
 
   for (const expense of expenses) {
-    net[expense.paid_by_user_id] =
-      (net[expense.paid_by_user_id] ?? 0) + expense.amount;
+    const paidSgd = toSgd(expense.amount, expense.currency, expense.exchange_rate_to_sgd);
+    net[expense.paid_by_user_id] = (net[expense.paid_by_user_id] ?? 0) + paidSgd;
     for (const split of expense.splits) {
-      net[split.user_id] = (net[split.user_id] ?? 0) - split.amount;
+      const splitSgd = toSgd(split.amount, expense.currency, expense.exchange_rate_to_sgd);
+      net[split.user_id] = (net[split.user_id] ?? 0) - splitSgd;
     }
   }
 

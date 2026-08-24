@@ -4,6 +4,24 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import * as db from "./data";
 import { splitEqually } from "./split";
+import { CURRENCIES, type Currency } from "./types";
+
+function parseCurrency(formData: FormData): {
+  currency: Currency;
+  exchangeRateToSgd: number;
+} {
+  const currency = String(formData.get("currency") ?? "SGD");
+  if (!CURRENCIES.includes(currency as Currency)) {
+    throw new Error("Unknown currency");
+  }
+  if (currency === "SGD") return { currency: "SGD", exchangeRateToSgd: 1 };
+
+  const exchangeRateToSgd = Number(formData.get("exchangeRate"));
+  if (!exchangeRateToSgd || exchangeRateToSgd <= 0) {
+    throw new Error("Enter a valid AUD → SGD exchange rate");
+  }
+  return { currency: "AUD", exchangeRateToSgd };
+}
 
 export async function createTripAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -110,11 +128,14 @@ export async function addExpenseAction(formData: FormData) {
   if (!amount || amount <= 0) throw new Error("Amount must be greater than 0");
 
   const participants = await db.getTripParticipants(tripId);
+  const { currency, exchangeRateToSgd } = parseCurrency(formData);
 
   await db.addExpense({
     tripId,
     description: String(formData.get("description") ?? "").trim(),
     amount,
+    currency,
+    exchangeRateToSgd,
     category: (formData.get("category") as string) || null,
     paidByUserId: Number(formData.get("paidBy")),
     expenseDate: String(formData.get("date")),
@@ -133,10 +154,13 @@ export async function updateExpenseAction(formData: FormData) {
   if (!amount || amount <= 0) throw new Error("Amount must be greater than 0");
 
   const participants = await db.getTripParticipants(tripId);
+  const { currency, exchangeRateToSgd } = parseCurrency(formData);
 
   await db.updateExpense(expenseId, {
     description: String(formData.get("description") ?? "").trim(),
     amount,
+    currency,
+    exchangeRateToSgd,
     category: (formData.get("category") as string) || null,
     paidByUserId: Number(formData.get("paidBy")),
     expenseDate: String(formData.get("date")),
