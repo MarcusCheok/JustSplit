@@ -63,14 +63,24 @@ export function TripForm({
         ))}
       </datalist>
 
-      <input
-        name="sgdToAud"
-        type="number"
-        step="0.0001"
-        min="0.0001"
-        placeholder="1 SGD = ? AUD (optional, for AUD expenses)"
-        className="rounded-xl bg-cream px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blush-dark"
-      />
+      <div className="flex gap-2">
+        <select
+          name="rateDirection"
+          defaultValue="sgdToAud"
+          className="rounded-xl bg-cream px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-blush-dark"
+        >
+          <option value="sgdToAud">1 SGD = ? AUD</option>
+          <option value="audToSgd">1 AUD = ? SGD</option>
+        </select>
+        <input
+          name="rateValue"
+          type="number"
+          step="0.0001"
+          min="0.0001"
+          placeholder="optional, for AUD expenses"
+          className="flex-1 rounded-xl bg-cream px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blush-dark"
+        />
+      </div>
 
       {others.length > 0 && (
         <div className="flex flex-col gap-1.5">

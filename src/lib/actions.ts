@@ -15,18 +15,21 @@ function parseCurrency(formData: FormData): Currency {
 }
 
 /**
- * Exchange rate is set once per trip (not per expense). Users think of it as
- * "1 SGD = ? AUD", so that's what the form asks for; internally we still
- * store/consume SGD-per-AUD (see currency.ts's toSgd), so it's inverted here.
+ * Exchange rate is set once per trip (not per expense), enterable in either
+ * direction — "1 SGD = ? AUD" or "1 AUD = ? SGD" — since either is a natural
+ * way to think about it. Internally we always store/consume SGD-per-AUD (see
+ * currency.ts's toSgd), so the "sgdToAud" direction is inverted here.
  */
 function parseTripExchangeRate(formData: FormData): number {
-  const raw = String(formData.get("sgdToAud") ?? "").trim();
+  const raw = String(formData.get("rateValue") ?? "").trim();
   if (!raw) return 1;
-  const sgdToAud = Number(raw);
-  if (!sgdToAud || sgdToAud <= 0) {
-    throw new Error("Enter a valid SGD → AUD exchange rate");
+  const value = Number(raw);
+  if (!value || value <= 0) {
+    throw new Error("Enter a valid exchange rate");
   }
-  return Math.round((1 / sgdToAud) * 1e6) / 1e6;
+  const direction = String(formData.get("rateDirection") ?? "sgdToAud");
+  const exchangeRateToSgd = direction === "audToSgd" ? value : 1 / value;
+  return Math.round(exchangeRateToSgd * 1e6) / 1e6;
 }
 
 export async function createTripAction(formData: FormData) {

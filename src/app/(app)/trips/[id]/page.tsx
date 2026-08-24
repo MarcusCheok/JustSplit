@@ -78,18 +78,24 @@ export default async function TripDetailPage({
         >
           <input type="hidden" name="tripId" value={id} />
           <span className="text-xs text-ink/40">💱</span>
+          <select
+            name="rateDirection"
+            defaultValue={trip.exchange_rate_to_sgd !== 1 ? "audToSgd" : "sgdToAud"}
+            className="rounded-lg bg-white px-1 py-1 text-xs text-ink/70 shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-blush-dark"
+          >
+            <option value="sgdToAud">1 SGD=?AUD</option>
+            <option value="audToSgd">1 AUD=?SGD</option>
+          </select>
           <input
-            name="sgdToAud"
+            name="rateValue"
             type="number"
             step="0.0001"
             min="0.0001"
             defaultValue={
-              trip.exchange_rate_to_sgd !== 1
-                ? Math.round((1 / trip.exchange_rate_to_sgd) * 10000) / 10000
-                : ""
+              trip.exchange_rate_to_sgd !== 1 ? trip.exchange_rate_to_sgd : ""
             }
-            placeholder="1 SGD = ? AUD"
-            className="w-28 rounded-lg bg-white px-2 py-1 text-xs text-ink/70 shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-blush-dark"
+            placeholder="rate"
+            className="w-20 rounded-lg bg-white px-2 py-1 text-xs text-ink/70 shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-blush-dark"
           />
           <button
             type="submit"
