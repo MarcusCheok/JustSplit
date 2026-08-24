@@ -15,6 +15,7 @@ function trip(
     name,
     status,
     country: null,
+    exchange_rate_to_sgd: 1,
     created_at: "2024-01-01T00:00:00.000Z",
     closed_at: closedAt,
   };

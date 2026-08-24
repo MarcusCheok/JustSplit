@@ -23,7 +23,12 @@ export default async function NewExpensePage({
         <h1 className="text-xl font-bold">Add expense</h1>
         <p className="text-sm text-ink/50">to {trip.name}</p>
       </div>
-      <ExpenseForm action={addExpenseAction} tripId={id} participants={participants} />
+      <ExpenseForm
+        action={addExpenseAction}
+        tripId={id}
+        participants={participants}
+        tripExchangeRate={trip.exchange_rate_to_sgd}
+      />
     </div>
   );
 }

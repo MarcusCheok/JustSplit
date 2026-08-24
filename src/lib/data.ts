@@ -63,11 +63,12 @@ export async function getTrip(id: string): Promise<Trip | null> {
 export async function createTrip(
   name: string,
   participantIds: number[],
-  country: string | null = null
+  country: string | null = null,
+  exchangeRateToSgd: number = 1
 ): Promise<Trip> {
   const { data, error } = await supabase
     .from("trips")
-    .insert({ name, country })
+    .insert({ name, country, exchange_rate_to_sgd: exchangeRateToSgd })
     .select("*")
     .single();
   if (error) throw error;
@@ -86,6 +87,17 @@ export async function updateTripCountry(
   country: string | null
 ): Promise<void> {
   const { error } = await supabase.from("trips").update({ country }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateTripExchangeRate(
+  id: string,
+  exchangeRateToSgd: number
+): Promise<void> {
+  const { error } = await supabase
+    .from("trips")
+    .update({ exchange_rate_to_sgd: exchangeRateToSgd })
+    .eq("id", id);
   if (error) throw error;
 }
 
@@ -124,7 +136,7 @@ export async function getAllExpenseSplitTotals(): Promise<
 > {
   const { data, error } = await supabase
     .from("expense_splits")
-    .select("user_id, amount, expenses(trip_id, currency, exchange_rate_to_sgd)");
+    .select("user_id, amount, expenses(trip_id, currency, trips(exchange_rate_to_sgd))");
   if (error) throw error;
   return (
     (data ?? []) as unknown as {
@@ -133,7 +145,7 @@ export async function getAllExpenseSplitTotals(): Promise<
       expenses: {
         trip_id: string;
         currency: Currency;
-        exchange_rate_to_sgd: number;
+        trips: { exchange_rate_to_sgd: number } | null;
       } | null;
     }[]
   )
@@ -143,7 +155,11 @@ export async function getAllExpenseSplitTotals(): Promise<
       user_id: row.user_id,
       // Normalized to SGD, the tabulation currency — analytics.ts consumes
       // these as plain comparable numbers, unaware of per-expense currency.
-      amount: toSgd(row.amount, row.expenses!.currency, row.expenses!.exchange_rate_to_sgd),
+      amount: toSgd(
+        row.amount,
+        row.expenses!.currency,
+        row.expenses!.trips?.exchange_rate_to_sgd ?? 1
+      ),
     }));
 }
 
@@ -162,7 +178,6 @@ export async function addExpense(input: {
   description: string;
   amount: number;
   currency: Currency;
-  exchangeRateToSgd: number;
   category: string | null;
   paidByUserId: number;
   expenseDate: string;
@@ -175,7 +190,6 @@ export async function addExpense(input: {
       description: input.description,
       amount: input.amount,
       currency: input.currency,
-      exchange_rate_to_sgd: input.exchangeRateToSgd,
       category: input.category,
       paid_by_user_id: input.paidByUserId,
       expense_date: input.expenseDate,
@@ -200,7 +214,6 @@ export async function updateExpense(
     description: string;
     amount: number;
     currency: Currency;
-    exchangeRateToSgd: number;
     category: string | null;
     paidByUserId: number;
     expenseDate: string;
@@ -213,7 +226,6 @@ export async function updateExpense(
       description: input.description,
       amount: input.amount,
       currency: input.currency,
-      exchange_rate_to_sgd: input.exchangeRateToSgd,
       category: input.category,
       paid_by_user_id: input.paidByUserId,
       expense_date: input.expenseDate,

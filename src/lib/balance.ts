@@ -22,21 +22,23 @@ export type GroupBalance = {
  * to any number of participants.
  *
  * Expenses may be entered in AUD or SGD; every amount is converted to SGD
- * (the tabulation currency) before netting. Settlements are SGD-only.
+ * (the tabulation currency) using the trip's exchange rate before netting.
+ * Settlements are SGD-only.
  */
 export function computeGroupBalance(
   participants: User[],
   expenses: Expense[],
-  settlements: Settlement[]
+  settlements: Settlement[],
+  exchangeRateToSgd: number
 ): GroupBalance {
   const net: Record<number, number> = {};
   for (const p of participants) net[p.id] = 0;
 
   for (const expense of expenses) {
-    const paidSgd = toSgd(expense.amount, expense.currency, expense.exchange_rate_to_sgd);
+    const paidSgd = toSgd(expense.amount, expense.currency, exchangeRateToSgd);
     net[expense.paid_by_user_id] = (net[expense.paid_by_user_id] ?? 0) + paidSgd;
     for (const split of expense.splits) {
-      const splitSgd = toSgd(split.amount, expense.currency, expense.exchange_rate_to_sgd);
+      const splitSgd = toSgd(split.amount, expense.currency, exchangeRateToSgd);
       net[split.user_id] = (net[split.user_id] ?? 0) - splitSgd;
     }
   }

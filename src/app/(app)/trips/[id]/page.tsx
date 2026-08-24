@@ -9,7 +9,12 @@ import {
 import { computeGroupBalance } from "@/lib/balance";
 import { toSgd } from "@/lib/currency";
 import { categoryEmoji, CURRENCY_SYMBOL } from "@/lib/types";
-import { closeTripAction, reopenTripAction, updateTripCountryAction } from "@/lib/actions";
+import {
+  closeTripAction,
+  reopenTripAction,
+  updateTripCountryAction,
+  updateTripExchangeRateAction,
+} from "@/lib/actions";
 import { BalanceSummary } from "@/components/BalanceSummary";
 import { COUNTRIES } from "@/lib/countries";
 
@@ -27,7 +32,12 @@ export default async function TripDetailPage({
     getTripExpenses(id),
     getTripSettlements(id),
   ]);
-  const balance = computeGroupBalance(participants, expenses, settlements);
+  const balance = computeGroupBalance(
+    participants,
+    expenses,
+    settlements,
+    trip.exchange_rate_to_sgd
+  );
   const userById = (userId: number) => participants.find((u) => u.id === userId);
 
   return (
@@ -55,6 +65,38 @@ export default async function TripDetailPage({
               <option key={c} value={c} />
             ))}
           </datalist>
+          <button
+            type="submit"
+            className="rounded-lg bg-white px-2 py-1 text-xs font-medium text-ink/50 shadow-sm ring-1 ring-black/5 transition active:scale-[0.97]"
+          >
+            Save
+          </button>
+        </form>
+        <form
+          action={updateTripExchangeRateAction}
+          className="mt-1 flex items-center gap-1.5"
+        >
+          <input type="hidden" name="tripId" value={id} />
+          <span className="text-xs text-ink/40">💱</span>
+          <select
+            name="rateDirection"
+            defaultValue={trip.exchange_rate_to_sgd !== 1 ? "audToSgd" : "sgdToAud"}
+            className="rounded-lg bg-white px-1 py-1 text-xs text-ink/70 shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-blush-dark"
+          >
+            <option value="sgdToAud">1 SGD=?AUD</option>
+            <option value="audToSgd">1 AUD=?SGD</option>
+          </select>
+          <input
+            name="rateValue"
+            type="number"
+            step="0.0001"
+            min="0.0001"
+            defaultValue={
+              trip.exchange_rate_to_sgd !== 1 ? trip.exchange_rate_to_sgd : ""
+            }
+            placeholder="rate"
+            className="w-20 rounded-lg bg-white px-2 py-1 text-xs text-ink/70 shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-blush-dark"
+          />
           <button
             type="submit"
             className="rounded-lg bg-white px-2 py-1 text-xs font-medium text-ink/50 shadow-sm ring-1 ring-black/5 transition active:scale-[0.97]"
@@ -131,7 +173,7 @@ export default async function TripDetailPage({
                     {toSgd(
                       expense.amount,
                       expense.currency,
-                      expense.exchange_rate_to_sgd
+                      trip.exchange_rate_to_sgd
                     ).toFixed(2)}
                   </span>
                 )}
