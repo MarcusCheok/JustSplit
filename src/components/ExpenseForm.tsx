@@ -1,7 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { CATEGORIES, CATEGORY_EMOJI, type Expense, type User } from "@/lib/types";
+import {
+  CATEGORIES,
+  CATEGORY_EMOJI,
+  CURRENCIES,
+  CURRENCY_SYMBOL,
+  type Currency,
+  type Expense,
+  type User,
+} from "@/lib/types";
 import { splitEqually } from "@/lib/split";
 import { useCurrentUser } from "./CurrentUserProvider";
 
@@ -34,6 +42,10 @@ export function ExpenseForm({
   const { currentUser } = useCurrentUser();
   const participantIds = participants.map((p) => p.id);
   const [amount, setAmount] = useState(expense?.amount ?? 0);
+  const [currency, setCurrency] = useState<Currency>(expense?.currency ?? "SGD");
+  const [exchangeRate, setExchangeRate] = useState(
+    expense?.currency === "AUD" ? expense.exchange_rate_to_sgd : 0
+  );
   const [mode, setMode] = useState<SplitMode>(detectInitialMode(expense, participantIds));
   const [fullPayerId, setFullPayerId] = useState(
     expense && expense.splits.length === 1
@@ -72,6 +84,51 @@ export function ExpenseForm({
           onChange={(e) => setAmount(Number(e.target.value) || 0)}
           className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-blush-dark"
         />
+      </label>
+
+      <label className="flex flex-col gap-1">
+        <span className="text-sm font-medium text-ink/70">Currency</span>
+        <div className="flex gap-2">
+          {CURRENCIES.map((c) => (
+            <label
+              key={c}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 transition has-checked:bg-mint has-checked:ring-mint-dark active:scale-[0.97]"
+            >
+              <input
+                type="radio"
+                name="currency"
+                value={c}
+                checked={currency === c}
+                onChange={() => setCurrency(c)}
+                className="sr-only"
+              />
+              {CURRENCY_SYMBOL[c]} {c}
+            </label>
+          ))}
+        </div>
+        {currency === "AUD" && (
+          <div className="flex flex-col gap-1 pt-1">
+            <span className="text-xs text-ink/50">1 AUD = ? SGD</span>
+            <input
+              name="exchangeRate"
+              type="number"
+              step="0.0001"
+              min="0.0001"
+              required
+              placeholder="e.g. 0.88"
+              defaultValue={
+                expense?.currency === "AUD" ? expense.exchange_rate_to_sgd : undefined
+              }
+              onChange={(e) => setExchangeRate(Number(e.target.value) || 0)}
+              className="rounded-xl bg-white px-3 py-2 shadow-sm ring-1 ring-black/5 outline-none focus:ring-2 focus:ring-blush-dark"
+            />
+            {amount > 0 && exchangeRate > 0 && (
+              <span className="text-xs text-ink/50">
+                ≈ S${(amount * exchangeRate).toFixed(2)}
+              </span>
+            )}
+          </div>
+        )}
       </label>
 
       <label className="flex flex-col gap-1">
@@ -145,7 +202,10 @@ export function ExpenseForm({
         {mode === "equal" && (
           <p className="text-sm text-ink/50">
             {participants
-              .map((u) => `${u.name} $${(equalShares[u.id] ?? 0).toFixed(2)}`)
+              .map(
+                (u) =>
+                  `${u.name} ${CURRENCY_SYMBOL[currency]}${(equalShares[u.id] ?? 0).toFixed(2)}`
+              )
               .join(" · ")}
           </p>
         )}

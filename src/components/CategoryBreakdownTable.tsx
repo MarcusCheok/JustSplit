@@ -15,42 +15,47 @@ export function CategoryBreakdownTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
-      <table className="w-full min-w-[360px] text-sm">
-        <thead>
-          <tr className="border-b border-black/5 text-left text-xs uppercase tracking-wide text-ink/50">
-            <th className="p-3 font-medium">Category</th>
-            {users.map((u) => (
-              <th key={u.id} className="p-3 text-right font-medium">
-                {u.emoji} {u.name}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          <tr className="border-b border-black/5 font-semibold">
-            <td className="p-3">Total</td>
-            {users.map((u) => (
-              <td key={u.id} className="p-3 text-right">
-                ${(totals[u.id] ?? 0).toFixed(2)}
-              </td>
-            ))}
-          </tr>
-          {rows.map((row) => (
-            <tr key={row.label} className="border-b border-black/5 last:border-0">
-              <td className="p-3 text-ink/70">
-                {categoryEmoji(row.label === "Uncategorized" ? null : row.label)}{" "}
-                {row.label}
-              </td>
+    <div className="flex flex-col gap-1.5">
+      <div className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-black/5">
+        <table className="w-full min-w-[360px] text-sm">
+          <thead>
+            <tr className="border-b border-black/5 text-left text-xs uppercase tracking-wide text-ink/50">
+              <th className="p-3 font-medium">Category</th>
               {users.map((u) => (
-                <td key={u.id} className="p-3 text-right text-ink/70">
-                  {row.amounts[u.id] ? `$${row.amounts[u.id].toFixed(2)}` : "–"}
+                <th key={u.id} className="p-3 text-right font-medium">
+                  {u.emoji} {u.name}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-black/5 font-semibold">
+              <td className="p-3">Total</td>
+              {users.map((u) => (
+                <td key={u.id} className="p-3 text-right">
+                  S${(totals[u.id] ?? 0).toFixed(2)}
                 </td>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+            {rows.map((row) => (
+              <tr key={row.label} className="border-b border-black/5 last:border-0">
+                <td className="p-3 text-ink/70">
+                  {categoryEmoji(row.label === "Uncategorized" ? null : row.label)}{" "}
+                  {row.label}
+                </td>
+                {users.map((u) => (
+                  <td key={u.id} className="p-3 text-right text-ink/70">
+                    {row.amounts[u.id] ? `S$${row.amounts[u.id].toFixed(2)}` : "–"}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-xs text-ink/40">
+        AUD expenses are converted to SGD at the rate entered when logged.
+      </p>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { toSgd } from "./currency";
 import type { Expense, User } from "./types";
 
 export type CategoryRow = {
@@ -5,7 +6,11 @@ export type CategoryRow = {
   amounts: Record<number, number>;
 };
 
-/** How much each person paid, broken down by expense category. */
+/**
+ * How much each person paid, broken down by expense category. Amounts are
+ * converted to SGD (the tabulation currency) regardless of what currency
+ * each expense was originally entered in.
+ */
 export function computeCategoryBreakdown(
   users: User[],
   expenses: Expense[]
@@ -17,13 +22,12 @@ export function computeCategoryBreakdown(
   const totals = emptyRow();
 
   for (const expense of expenses) {
+    const amountSgd = toSgd(expense.amount, expense.currency, expense.exchange_rate_to_sgd);
     const label = expense.category ?? "Uncategorized";
     const row = byCategory.get(label) ?? emptyRow();
-    row[expense.paid_by_user_id] =
-      (row[expense.paid_by_user_id] ?? 0) + expense.amount;
+    row[expense.paid_by_user_id] = (row[expense.paid_by_user_id] ?? 0) + amountSgd;
     byCategory.set(label, row);
-    totals[expense.paid_by_user_id] =
-      (totals[expense.paid_by_user_id] ?? 0) + expense.amount;
+    totals[expense.paid_by_user_id] = (totals[expense.paid_by_user_id] ?? 0) + amountSgd;
   }
 
   const rowTotal = (amounts: Record<number, number>) =>

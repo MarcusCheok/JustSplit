@@ -7,7 +7,8 @@ import {
   getTripParticipants,
 } from "@/lib/data";
 import { computeGroupBalance } from "@/lib/balance";
-import { categoryEmoji } from "@/lib/types";
+import { toSgd } from "@/lib/currency";
+import { categoryEmoji, CURRENCY_SYMBOL } from "@/lib/types";
 import { closeTripAction, reopenTripAction } from "@/lib/actions";
 import { BalanceSummary } from "@/components/BalanceSummary";
 
@@ -96,9 +97,22 @@ export default async function TripDetailPage({
                   {expense.category ? ` · ${expense.category}` : ""}
                 </span>
               </div>
-              <span className="font-semibold">
-                ${expense.amount.toFixed(2)}
-              </span>
+              <div className="flex flex-col items-end">
+                <span className="font-semibold">
+                  {CURRENCY_SYMBOL[expense.currency]}
+                  {expense.amount.toFixed(2)}
+                </span>
+                {expense.currency !== "SGD" && (
+                  <span className="text-xs text-ink/40">
+                    ≈ S$
+                    {toSgd(
+                      expense.amount,
+                      expense.currency,
+                      expense.exchange_rate_to_sgd
+                    ).toFixed(2)}
+                  </span>
+                )}
+              </div>
             </Link>
           );
         })}
@@ -121,7 +135,7 @@ export default async function TripDetailPage({
                   {from?.emoji} {from?.name} → {to?.emoji} {to?.name}
                   {s.note ? ` · ${s.note}` : ""}
                 </span>
-                <span className="font-semibold">${s.amount.toFixed(2)}</span>
+                <span className="font-semibold">S${s.amount.toFixed(2)}</span>
               </div>
             );
           })}

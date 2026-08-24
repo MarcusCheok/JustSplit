@@ -58,7 +58,7 @@ export function SettleForm({
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium text-ink/70">Amount</span>
+        <span className="text-sm font-medium text-ink/70">Amount (SGD)</span>
         <input
           name="amount"
           type="number"

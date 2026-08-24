@@ -42,14 +42,15 @@ export function TripsSnapshotSummary({
         ) : (
           <p
             className="text-sm"
-            aria-label={`You typically spend $${mySpend.toFixed(2)} per trip`}
+            aria-label={`You typically spend S$${mySpend.toFixed(2)} per trip`}
           >
             {me.emoji} You typically spend{" "}
-            <span className="font-semibold">${mySpend.toFixed(2)}</span>
+            <span className="font-semibold">S${mySpend.toFixed(2)}</span>
           </p>
         )}
         <p className="text-xs text-ink/40">
-          Based on your share of each trip&apos;s costs, not who paid at checkout.
+          Based on your share of each trip&apos;s costs (converted to SGD), not who
+          paid at checkout.
         </p>
       </div>
     </>
