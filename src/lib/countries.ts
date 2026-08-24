@@ -1,0 +1,41 @@
+/**
+ * Country names for the trip-country autocomplete `<datalist>`. Not
+ * enforced — trips.country is free text — this just makes entry fast and
+ * consistent so "Countries Visited" stats aggregate cleanly.
+ */
+export const COUNTRIES = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola",
+  "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+  "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus",
+  "Belgium", "Belize", "Benin", "Bhutan", "Bolivia",
+  "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria",
+  "Burkina Faso", "Burundi", "Cambodia", "Cameroon", "Canada",
+  "Chad", "Chile", "China", "Colombia", "Costa Rica",
+  "Croatia", "Cuba", "Cyprus", "Czechia", "Denmark",
+  "Djibouti", "Dominican Republic", "Ecuador", "Egypt", "El Salvador",
+  "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland",
+  "France", "Gabon", "Georgia", "Germany", "Ghana",
+  "Greece", "Guatemala", "Guinea", "Guyana", "Haiti",
+  "Honduras", "Hong Kong", "Hungary", "Iceland", "India",
+  "Indonesia", "Iran", "Iraq", "Ireland", "Israel",
+  "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan",
+  "Kenya", "Kuwait", "Kyrgyzstan", "Laos", "Latvia",
+  "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein",
+  "Lithuania", "Luxembourg", "Macau", "Madagascar", "Malawi",
+  "Malaysia", "Maldives", "Mali", "Malta", "Mauritius",
+  "Mexico", "Moldova", "Monaco", "Mongolia", "Montenegro",
+  "Morocco", "Mozambique", "Myanmar", "Namibia", "Nepal",
+  "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria",
+  "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan",
+  "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru",
+  "Philippines", "Poland", "Portugal", "Qatar", "Romania",
+  "Russia", "Rwanda", "Saudi Arabia", "Senegal", "Serbia",
+  "Seychelles", "Singapore", "Slovakia", "Slovenia", "Somalia",
+  "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka",
+  "Sudan", "Suriname", "Sweden", "Switzerland", "Syria",
+  "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste",
+  "Togo", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan",
+  "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom",
+  "United States", "Uruguay", "Uzbekistan", "Vanuatu",
+  "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe",
+] as const;

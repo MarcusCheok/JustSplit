@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { User } from "@/lib/types";
+import { COUNTRIES } from "@/lib/countries";
 import { useCurrentUser } from "./CurrentUserProvider";
 
 type NewPerson = { name: string; emoji: string };
@@ -49,6 +50,18 @@ export function TripForm({
         required
         className="rounded-xl bg-cream px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blush-dark"
       />
+
+      <input
+        name="country"
+        list="country-options"
+        placeholder="Country (optional)"
+        className="rounded-xl bg-cream px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blush-dark"
+      />
+      <datalist id="country-options">
+        {COUNTRIES.map((c) => (
+          <option key={c} value={c} />
+        ))}
+      </datalist>
 
       {others.length > 0 && (
         <div className="flex flex-col gap-1.5">

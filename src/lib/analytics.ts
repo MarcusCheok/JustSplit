@@ -107,6 +107,49 @@ export function computeTopCompanion(
   return { user, tripCount: best.tripCount };
 }
 
+export type CountriesVisited = {
+  totalCountries: number;
+  topCountry: { name: string; count: number } | null;
+};
+
+/**
+ * How many distinct countries `meId` has visited (via counted trips they
+ * were on) and which one they've been to most. Trips with no country set
+ * are simply excluded from the count — there's no requirement to backfill
+ * every trip for this to work.
+ */
+export function computeCountriesVisited(
+  meId: number,
+  trips: Trip[],
+  participantRows: { trip_id: string; user_id: number }[]
+): CountriesVisited {
+  const myTripIds = new Set(
+    participantRows.filter((r) => r.user_id === meId).map((r) => r.trip_id)
+  );
+
+  const countByCountry = new Map<string, number>();
+  for (const trip of trips) {
+    if (trip.name === "General") continue;
+    if (!myTripIds.has(trip.id)) continue;
+    const country = trip.country?.trim();
+    if (!country) continue;
+    countByCountry.set(country, (countByCountry.get(country) ?? 0) + 1);
+  }
+
+  let topCountry: { name: string; count: number } | null = null;
+  for (const [name, count] of countByCountry) {
+    if (
+      !topCountry ||
+      count > topCountry.count ||
+      (count === topCountry.count && name < topCountry.name)
+    ) {
+      topCountry = { name, count };
+    }
+  }
+
+  return { totalCountries: countByCountry.size, topCountry };
+}
+
 function median(values: number[]): number {
   if (values.length === 0) return 0;
   const sorted = [...values].sort((a, b) => a - b);

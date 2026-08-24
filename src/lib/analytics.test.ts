@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { computeTripsSnapshot, computeTopCompanion } from "./analytics";
+import {
+  computeTripsSnapshot,
+  computeTopCompanion,
+  computeCountriesVisited,
+} from "./analytics";
 import type { Trip, User } from "./types";
 
 const marcus: User = { id: 1, name: "Marcus", emoji: "🧑", color: "blue" };
@@ -7,11 +11,17 @@ const partner: User = { id: 2, name: "Partner", emoji: "🧑‍🦰", color: "pi
 const friend: User = { id: 3, name: "Friend", emoji: "🧑‍🎤", color: "peach" };
 const users: User[] = [marcus, partner];
 
-function trip(id: string, name = "Trip", status: Trip["status"] = "open"): Trip {
+function trip(
+  id: string,
+  name = "Trip",
+  status: Trip["status"] = "open",
+  country: string | null = null
+): Trip {
   return {
     id,
     name,
     status,
+    country,
     created_at: "2024-01-01T00:00:00.000Z",
     closed_at: status === "closed" ? "2024-01-02T00:00:00.000Z" : null,
   };
@@ -229,5 +239,70 @@ describe("computeTopCompanion", () => {
       participantRows
     );
     expect(result?.user.id).toBe(partner.id);
+  });
+});
+
+describe("computeCountriesVisited", () => {
+  it("returns zero/null when the user has no counted trips", () => {
+    const result = computeCountriesVisited(marcus.id, [], []);
+    expect(result).toEqual({ totalCountries: 0, topCountry: null });
+  });
+
+  it("ignores trips with no country set", () => {
+    const trips = [trip("t1", "Trip", "open", null)];
+    const participantRows = [{ trip_id: "t1", user_id: marcus.id }];
+    const result = computeCountriesVisited(marcus.id, trips, participantRows);
+    expect(result).toEqual({ totalCountries: 0, topCountry: null });
+  });
+
+  it("counts distinct countries and finds the most-visited one", () => {
+    const trips = [
+      trip("t1", "Trip", "closed", "Japan"),
+      trip("t2", "Trip", "closed", "Japan"),
+      trip("t3", "Trip", "closed", "Australia"),
+    ];
+    const participantRows = [
+      { trip_id: "t1", user_id: marcus.id },
+      { trip_id: "t2", user_id: marcus.id },
+      { trip_id: "t3", user_id: marcus.id },
+    ];
+    const result = computeCountriesVisited(marcus.id, trips, participantRows);
+    expect(result.totalCountries).toBe(2);
+    expect(result.topCountry).toEqual({ name: "Japan", count: 2 });
+  });
+
+  it("only counts trips the user actually participated in", () => {
+    const trips = [
+      trip("t1", "Trip", "closed", "Japan"),
+      trip("t2", "Trip", "closed", "Australia"),
+    ];
+    // Marcus only on t1; t2 (Partner's solo trip) shouldn't count for him.
+    const participantRows = [
+      { trip_id: "t1", user_id: marcus.id },
+      { trip_id: "t2", user_id: partner.id },
+    ];
+    const result = computeCountriesVisited(marcus.id, trips, participantRows);
+    expect(result.totalCountries).toBe(1);
+    expect(result.topCountry).toEqual({ name: "Japan", count: 1 });
+  });
+
+  it("excludes a trip named General", () => {
+    const trips = [trip("g1", "General", "open", "Singapore")];
+    const participantRows = [{ trip_id: "g1", user_id: marcus.id }];
+    const result = computeCountriesVisited(marcus.id, trips, participantRows);
+    expect(result).toEqual({ totalCountries: 0, topCountry: null });
+  });
+
+  it("breaks a tie between equally-visited countries alphabetically", () => {
+    const trips = [
+      trip("t1", "Trip", "closed", "Japan"),
+      trip("t2", "Trip", "closed", "Australia"),
+    ];
+    const participantRows = [
+      { trip_id: "t1", user_id: marcus.id },
+      { trip_id: "t2", user_id: marcus.id },
+    ];
+    const result = computeCountriesVisited(marcus.id, trips, participantRows);
+    expect(result.topCountry).toEqual({ name: "Australia", count: 1 });
   });
 });

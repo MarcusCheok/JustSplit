@@ -62,11 +62,12 @@ export async function getTrip(id: string): Promise<Trip | null> {
 
 export async function createTrip(
   name: string,
-  participantIds: number[]
+  participantIds: number[],
+  country: string | null = null
 ): Promise<Trip> {
   const { data, error } = await supabase
     .from("trips")
-    .insert({ name })
+    .insert({ name, country })
     .select("*")
     .single();
   if (error) throw error;
@@ -78,6 +79,14 @@ export async function createTrip(
   if (participantsError) throw participantsError;
 
   return trip;
+}
+
+export async function updateTripCountry(
+  id: string,
+  country: string | null
+): Promise<void> {
+  const { error } = await supabase.from("trips").update({ country }).eq("id", id);
+  if (error) throw error;
 }
 
 export async function closeTrip(id: string): Promise<void> {
