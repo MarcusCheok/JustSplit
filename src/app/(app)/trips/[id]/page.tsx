@@ -159,33 +159,54 @@ export default async function TripDetailPage({
                   key={expense.id}
                   href={`/trips/${id}/expenses/${expense.id}/edit`}
                   prefetch={false}
-                  className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5 transition active:scale-[0.97]"
+                  className="flex flex-col gap-2 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5 transition active:scale-[0.97]"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cream text-lg">
-                    {categoryEmoji(expense.category)}
-                  </span>
-                  <div className="flex flex-1 flex-col">
-                    <span className="font-medium">{expense.description}</span>
-                    <span className="text-xs text-ink/50">
-                      {payer?.emoji} {payer?.name}
-                      {expense.category ? ` · ${expense.category}` : ""}
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cream text-lg">
+                      {categoryEmoji(expense.category)}
                     </span>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <span className="font-semibold">
-                      {CURRENCY_SYMBOL[expense.currency]}
-                      {expense.amount.toFixed(2)}
-                    </span>
-                    {expense.currency !== "SGD" && (
-                      <span className="text-xs text-ink/40">
-                        ≈ S$
-                        {toSgd(
-                          expense.amount,
-                          expense.currency,
-                          trip.exchange_rate_to_sgd
-                        ).toFixed(2)}
+                    <div className="flex flex-1 flex-col">
+                      <span className="font-medium">{expense.description}</span>
+                      <span className="text-xs text-ink/50">
+                        {payer?.emoji} {payer?.name}
+                        {expense.category ? ` · ${expense.category}` : ""}
                       </span>
-                    )}
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="font-semibold">
+                        {CURRENCY_SYMBOL[expense.currency]}
+                        {expense.amount.toFixed(2)}
+                      </span>
+                      {expense.currency !== "SGD" && (
+                        <span className="text-xs text-ink/40">
+                          ≈ S$
+                          {toSgd(
+                            expense.amount,
+                            expense.currency,
+                            trip.exchange_rate_to_sgd
+                          ).toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1 pl-12">
+                    {participants.map((p) => {
+                      const involved = expense.splits.some(
+                        (s) => s.user_id === p.id
+                      );
+                      return (
+                        <span
+                          key={p.id}
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                            involved
+                              ? "bg-mint text-ink/70"
+                              : "bg-black/5 text-ink/25"
+                          }`}
+                        >
+                          {p.emoji} {p.name}
+                        </span>
+                      );
+                    })}
                   </div>
                 </Link>
               );
