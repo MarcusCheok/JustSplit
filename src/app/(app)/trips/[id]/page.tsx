@@ -17,6 +17,7 @@ import {
   updateTripExchangeRateAction,
 } from "@/lib/actions";
 import { BalanceSummary } from "@/components/BalanceSummary";
+import { TripSpendSummary } from "@/components/TripSpendSummary";
 import { COUNTRIES } from "@/lib/countries";
 
 export default async function TripDetailPage({
@@ -136,6 +137,8 @@ export default async function TripDetailPage({
           </button>
         </form>
       )}
+
+      <TripSpendSummary expenses={expenses} exchangeRateToSgd={trip.exchange_rate_to_sgd} />
 
       <section className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-ink/50">
