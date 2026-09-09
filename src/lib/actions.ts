@@ -229,3 +229,12 @@ export async function addSettlementAction(formData: FormData) {
   revalidatePath("/trips");
   redirect(`/trips/${tripId}`);
 }
+
+export async function deleteSettlementAction(formData: FormData) {
+  const tripId = String(formData.get("tripId"));
+  const settlementId = String(formData.get("settlementId"));
+  await db.deleteSettlement(settlementId);
+  revalidatePath(`/trips/${tripId}`);
+  revalidatePath("/trips");
+  redirect(`/trips/${tripId}`);
+}
