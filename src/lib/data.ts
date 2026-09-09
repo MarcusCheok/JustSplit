@@ -281,3 +281,11 @@ export async function addSettlement(input: {
   });
   if (error) throw error;
 }
+
+export async function deleteSettlement(settlementId: string): Promise<void> {
+  const { error } = await supabase
+    .from("settlements")
+    .delete()
+    .eq("id", settlementId);
+  if (error) throw error;
+}

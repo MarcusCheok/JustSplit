@@ -15,9 +15,12 @@ import {
   reopenTripAction,
   updateTripCountryAction,
   updateTripExchangeRateAction,
+  deleteExpenseAction,
+  deleteSettlementAction,
 } from "@/lib/actions";
 import { BalanceSummary } from "@/components/BalanceSummary";
 import { TripSpendSummary } from "@/components/TripSpendSummary";
+import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 import { COUNTRIES } from "@/lib/countries";
 
 export default async function TripDetailPage({
@@ -158,39 +161,54 @@ export default async function TripDetailPage({
             {day.expenses.map((expense) => {
               const payer = userById(expense.paid_by_user_id);
               return (
-                <Link
+                <div
                   key={expense.id}
-                  href={`/trips/${id}/expenses/${expense.id}/edit`}
-                  prefetch={false}
-                  className="flex flex-col gap-2 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5 transition active:scale-[0.97]"
+                  className="flex flex-col gap-2 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-black/5"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cream text-lg">
-                      {categoryEmoji(expense.category)}
-                    </span>
-                    <div className="flex flex-1 flex-col">
-                      <span className="font-medium">{expense.description}</span>
-                      <span className="text-xs text-ink/50">
-                        {payer?.emoji} {payer?.name}
-                        {expense.category ? ` · ${expense.category}` : ""}
+                    <Link
+                      href={`/trips/${id}/expenses/${expense.id}/edit`}
+                      prefetch={false}
+                      className="flex flex-1 items-center gap-3 transition active:scale-[0.97]"
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cream text-lg">
+                        {categoryEmoji(expense.category)}
                       </span>
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <span className="font-semibold">
-                        {CURRENCY_SYMBOL[expense.currency]}
-                        {expense.amount.toFixed(2)}
-                      </span>
-                      {expense.currency !== "SGD" && (
-                        <span className="text-xs text-ink/40">
-                          ≈ S$
-                          {toSgd(
-                            expense.amount,
-                            expense.currency,
-                            trip.exchange_rate_to_sgd
-                          ).toFixed(2)}
+                      <div className="flex flex-1 flex-col">
+                        <span className="font-medium">{expense.description}</span>
+                        <span className="text-xs text-ink/50">
+                          {payer?.emoji} {payer?.name}
+                          {expense.category ? ` · ${expense.category}` : ""}
                         </span>
-                      )}
-                    </div>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="font-semibold">
+                          {CURRENCY_SYMBOL[expense.currency]}
+                          {expense.amount.toFixed(2)}
+                        </span>
+                        {expense.currency !== "SGD" && (
+                          <span className="text-xs text-ink/40">
+                            ≈ S$
+                            {toSgd(
+                              expense.amount,
+                              expense.currency,
+                              trip.exchange_rate_to_sgd
+                            ).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+                    <form action={deleteExpenseAction}>
+                      <input type="hidden" name="tripId" value={id} />
+                      <input type="hidden" name="expenseId" value={expense.id} />
+                      <ConfirmDeleteButton
+                        confirmMessage={`Delete "${expense.description}"? This can't be undone.`}
+                        ariaLabel="Delete expense"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink/30 transition hover:bg-rose-50 hover:text-rose-500 active:scale-[0.9]"
+                      >
+                        ✕
+                      </ConfirmDeleteButton>
+                    </form>
                   </div>
                   <div className="flex flex-wrap gap-1 pl-12">
                     {participants.map((p) => {
@@ -211,7 +229,7 @@ export default async function TripDetailPage({
                       );
                     })}
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>
@@ -235,7 +253,20 @@ export default async function TripDetailPage({
                   {from?.emoji} {from?.name} → {to?.emoji} {to?.name}
                   {s.note ? ` · ${s.note}` : ""}
                 </span>
-                <span className="font-semibold">S${s.amount.toFixed(2)}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">S${s.amount.toFixed(2)}</span>
+                  <form action={deleteSettlementAction}>
+                    <input type="hidden" name="tripId" value={id} />
+                    <input type="hidden" name="settlementId" value={s.id} />
+                    <ConfirmDeleteButton
+                      confirmMessage={`Delete this payment (${from?.name} → ${to?.name}, S$${s.amount.toFixed(2)})? This can't be undone.`}
+                      ariaLabel="Delete payment"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink/30 transition hover:bg-rose-50 hover:text-rose-500 active:scale-[0.9]"
+                    >
+                      ✕
+                    </ConfirmDeleteButton>
+                  </form>
+                </div>
               </div>
             );
           })}

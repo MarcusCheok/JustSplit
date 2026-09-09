@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getExpense, getTrip, getTripParticipants } from "@/lib/data";
 import { updateExpenseAction, deleteExpenseAction } from "@/lib/actions";
 import { ExpenseForm } from "@/components/ExpenseForm";
+import { ConfirmDeleteButton } from "@/components/ConfirmDeleteButton";
 
 export default async function EditExpensePage({
   params,
@@ -35,9 +36,12 @@ export default async function EditExpensePage({
       <form action={deleteExpenseAction}>
         <input type="hidden" name="tripId" value={expense.trip_id} />
         <input type="hidden" name="expenseId" value={expense.id} />
-        <button className="w-full rounded-2xl bg-white px-4 py-2 text-sm font-medium text-rose-500 shadow-sm ring-1 ring-rose-200 transition active:scale-[0.97]">
+        <ConfirmDeleteButton
+          confirmMessage={`Delete "${expense.description}"? This can't be undone.`}
+          className="w-full rounded-2xl bg-white px-4 py-2 text-sm font-medium text-rose-500 shadow-sm ring-1 ring-rose-200 transition active:scale-[0.97]"
+        >
           Delete expense
-        </button>
+        </ConfirmDeleteButton>
       </form>
     </div>
   );
